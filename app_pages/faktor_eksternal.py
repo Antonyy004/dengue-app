@@ -1,0 +1,231 @@
+"""
+pages/faktor_eksternal.py — Analisis Feature Importance & AI Narrative
+"""
+
+import streamlit as st
+import pandas as pd
+import matplotlib.pyplot as plt
+from utils.charts import style_ax, ACCENT, GRID_COL, TEXT_COL, DARK_BG
+from utils.db import get_provinsi_list
+from utils.model import get_bundle
+
+FITUR_LABEL = {
+    "lag_t1"                         : "kasus tahun lalu",
+    "lag_t2"                         : "kasus 2 tahun lalu",
+    "lag_t3"                         : "kasus 3 tahun lalu",
+    "rolling_mean_2"                 : "rata-rata 2 tahun terakhir",
+    "rolling_mean_3"                 : "rata-rata 3 tahun terakhir",
+    "growth_rate"                    : "laju pertumbuhan kasus",
+    "curah_hujan"                    : "curah hujan",
+    "suhu"                           : "suhu udara",
+    "kelembaban"                     : "kelembaban udara",
+    "persentase_mobilitas"           : "mobilitas penduduk",
+    "persentase_akses_sanitasi_layak": "akses sanitasi layak",
+    "persentase_akses_air_layak"     : "akses air bersih",
+    "jumlah_penduduk"                : "kepadatan penduduk",
+    "provinsi_encoded"               : "lokasi provinsi",
+    "tahun"                          : "faktor waktu",
+}
+
+REKOMENDASI_MAP = {
+    "curah_hujan"                    : "Tingkatkan kewaspadaan saat musim hujan dan pastikan drainase berfungsi baik.",
+    "suhu"                           : "Monitor perubahan suhu dan korelasinya dengan siklus nyamuk Aedes aegypti.",
+    "kelembaban"                     : "Kurangi area lembab yang berpotensi menjadi tempat berkembang biak nyamuk.",
+    "persentase_mobilitas"           : "Pantau mobilitas penduduk antar wilayah terutama saat musim penularan tinggi.",
+    "persentase_akses_sanitasi_layak": "Tingkatkan akses sanitasi layak untuk mengurangi risiko penyebaran DBD.",
+    "persentase_akses_air_layak"     : "Perbaiki infrastruktur air bersih untuk mengurangi penampungan air terbuka.",
+    "lag_t1"                         : "Lakukan evaluasi program pencegahan tahun lalu dan perkuat yang berhasil.",
+    "jumlah_penduduk"                : "Fokuskan program pencegahan di area dengan kepadatan penduduk tinggi.",
+}
+
+
+def show(df_merge):
+    st.title("🔬 Analisis Faktor Eksternal")
+
+    prov_opts = get_provinsi_list(df_merge)
+    col1, col2 = st.columns([2, 1])
+    with col1:
+        prov_fi = st.selectbox("Provinsi", prov_opts)
+    with col2:
+        top_n = st.slider("Top-N Fitur", 3, 15, 10)
+
+    if not st.button("📊 Tampilkan Analisis", type="primary"):
+        return
+
+    rf_models      = get_bundle("rf_models")
+    xgb_models     = get_bundle("xgb_models")
+    best_model_map = get_bundle("best_model_map")
+    fitur_cols     = get_bundle("fitur_cols", [])
+
+    mn   = best_model_map.get(prov_fi, "")
+    m_fi = None
+    t_sfx = ""
+
+    if mn == "Random Forest" and prov_fi in rf_models:
+        m_fi, t_sfx = rf_models[prov_fi], "Random Forest"
+    elif mn == "XGBoost" and prov_fi in xgb_models:
+        m_fi, t_sfx = xgb_models[prov_fi], "XGBoost"
+    elif prov_fi in rf_models:
+        m_fi, t_sfx = rf_models[prov_fi], "Random Forest"
+    elif prov_fi in xgb_models:
+        m_fi, t_sfx = xgb_models[prov_fi], "XGBoost"
+
+    if m_fi is None:
+        st.warning("Feature importance tidak tersedia untuk provinsi ini.")
+        return
+
+    imp   = m_fi.feature_importances_
+    fi_df = (
+        pd.DataFrame({"Fitur": fitur_cols, "Score": imp})
+        .sort_values("Score", ascending=False)
+        .head(top_n)
+    )
+
+    # ── Feature Importance Chart ──────────────────────────────────────────────
+    fig, ax = plt.subplots(figsize=(10, 5))
+    bar_c = [ACCENT if i == 0 else GRID_COL for i in range(len(fi_df))]
+    ax.barh(fi_df["Fitur"][::-1], fi_df["Score"][::-1], color=bar_c[::-1])
+    ax.axvline(fi_df["Score"].mean(), color="#ff6b6b",
+               linestyle="--", linewidth=1, label="Rata-rata")
+    style_ax(ax, fig, f"Feature Importance — {prov_fi} ({t_sfx})")
+    ax.set_xlabel("Importance Score")
+    ax.legend(facecolor=DARK_BG, labelcolor=TEXT_COL)
+    st.pyplot(fig)
+    plt.close()
+
+    st.dataframe(fi_df.reset_index(drop=True), use_container_width=True)
+
+    st.divider()
+
+# ── AI Narrative ──────────────────────────────────────────────────────────
+    st.subheader("🤖 AI Narrative")
+
+    df_prov    = df_merge[df_merge["provinsi"] == prov_fi].sort_values("tahun")
+    top3_fitur = fi_df.head(3)["Fitur"].tolist()
+    top3_score = fi_df.head(3)["Score"].tolist()
+    top3_label = [FITUR_LABEL.get(f, f) for f in top3_fitur]
+
+    # Siapkan data konteks
+    tahun_max_prov  = int(df_prov["tahun"].max())
+    kasus_last_prov = int(df_prov[df_prov["tahun"] == tahun_max_prov]["jumlah_kasus_bulat"].sum())
+
+    nilai_top3 = []
+    for fitur in top3_fitur:
+        if fitur in df_prov.columns:
+            val = df_prov[fitur].mean()
+            nilai_top3.append(f"{FITUR_LABEL.get(fitur, fitur)}: {val:.2f}")
+
+    # Baca API key
+    from dotenv import load_dotenv
+    import os
+    load_dotenv()
+    gemini_api_key = os.getenv("GEMINI_API_KEY") or st.secrets.get("GEMINI_API_KEY", None)
+
+    @st.cache_data(ttl=3600, show_spinner=False)
+    def generate_ai_narrative(prov_fi, top3_label, top3_score,
+                              nilai_top3, kasus_last_prov,
+                              tahun_max_prov, model_name, api_key):
+        try:
+            import google.generativeai as genai
+
+            if not api_key:
+                return None, "GEMINI_API_KEY tidak ditemukan"
+
+            genai.configure(api_key=api_key)
+            model = genai.GenerativeModel("gemini-2.5-flash")
+
+            prompt = f"""Kamu adalah sistem analisis kesehatan masyarakat Indonesia
+yang fokus pada penyakit DBD.
+
+Berikan narasi analisis faktor eksternal dalam Bahasa Indonesia yang singkat,
+jelas, dan mudah dipahami (3-4 kalimat). Langsung ke isi tanpa pembuka.
+
+DATA PROVINSI {prov_fi}:
+- Kasus DBD terakhir ({tahun_max_prov}): {kasus_last_prov:,} kasus
+- Model prediksi: {model_name}
+- Faktor paling berpengaruh: {top3_label[0]} ({top3_score[0]*100:.1f}%)
+- Faktor kedua: {top3_label[1]} ({top3_score[1]*100:.1f}%)
+- Faktor ketiga: {top3_label[2]} ({top3_score[2]*100:.1f}%)
+- Nilai rata-rata faktor: {", ".join(nilai_top3)}
+
+FORMAT OUTPUT:
+- Kalimat 1: faktor dominan dan pengaruhnya terhadap DBD di provinsi ini
+- Kalimat 2: hubungan faktor kedua dan ketiga dengan penyebaran DBD
+- Kalimat 3: interpretasi kondisi aktual berdasarkan nilai rata-rata
+- Kalimat 4: rekomendasi spesifik untuk provinsi ini
+
+PENTING: jangan gunakan markdown seperti ** atau ##, tulis teks biasa saja."""
+
+            response = model.generate_content(prompt)
+            return response.text, None
+
+        except Exception as e:
+            return None, str(e)
+
+    # Panggil AI
+    with st.spinner("🤖 AI sedang menganalisis faktor..."):
+        ai_narrative, ai_error = generate_ai_narrative(
+            prov_fi, top3_label, top3_score,
+            nilai_top3, kasus_last_prov,
+            tahun_max_prov, t_sfx, gemini_api_key
+        )
+
+    if ai_error:
+        # Fallback ke narasi if-else
+        historis_fitur = {"lag_t1", "lag_t2", "lag_t3",
+                          "rolling_mean_2", "rolling_mean_3",
+                          "growth_rate", "tahun"}
+
+        if top3_fitur[0] in historis_fitur:
+            narasi_pembuka = (
+                f"Prediksi kasus DBD di {prov_fi} sangat dipengaruhi oleh "
+                f"{top3_label[0]} ({top3_score[0]*100:.1f}%), "
+                f"menunjukkan bahwa pola historis kasus merupakan prediktor utama."
+            )
+        else:
+            narasi_pembuka = (
+                f"Prediksi kasus DBD di {prov_fi} paling dipengaruhi oleh "
+                f"{top3_label[0]} ({top3_score[0]*100:.1f}%), "
+                f"menunjukkan peran besar faktor lingkungan terhadap penyebaran DBD."
+            )
+
+        narasi_faktor = (
+            f"Faktor pendukung: {top3_label[1]} ({top3_score[1]*100:.1f}%) "
+            f"dan {top3_label[2]} ({top3_score[2]*100:.1f}%)."
+            if len(top3_label) >= 3 else ""
+        )
+
+        rekomendasi = REKOMENDASI_MAP.get(
+            top3_fitur[0],
+            "Pertahankan dan tingkatkan program pencegahan DBD yang sudah berjalan."
+        )
+
+        ai_narrative = f"{narasi_pembuka} {narasi_faktor} {rekomendasi}"
+        st.caption(f"⚠️ AI tidak tersedia: {ai_error}")
+
+    st.markdown(
+        f"""<div class="insight-box">
+        <strong>📍 Analisis Faktor — {prov_fi}</strong><br><br>
+        {ai_narrative}
+        </div>""",
+        unsafe_allow_html=True,
+    )
+
+    st.divider()
+
+    # ── Keterangan fitur ──────────────────────────────────────────────────────
+    st.subheader("📋 Keterangan Fitur")
+    st.markdown("""
+| Fitur | Keterangan |
+|---|---|
+| lag_t1, lag_t2, lag_t3 | Kasus DBD 1, 2, 3 tahun sebelumnya |
+| rolling_mean_2/3 | Rata-rata kasus 2 dan 3 tahun terakhir |
+| growth_rate | Persentase perubahan kasus antar tahun |
+| curah_hujan | Curah hujan rata-rata (mm) |
+| suhu | Suhu rata-rata (°C) |
+| kelembaban | Kelembaban udara rata-rata (%) |
+| persentase_mobilitas | Tingkat mobilitas penduduk |
+| persentase_akses_sanitasi_layak | Akses sanitasi layak (%) |
+| persentase_akses_air_layak | Akses air bersih layak (%) |
+| jumlah_penduduk | Jumlah penduduk provinsi |
+""")
