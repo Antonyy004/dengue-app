@@ -71,12 +71,28 @@ with st.sidebar:
         st.warning("⚠️ Model belum dimuat")
 
     st.divider()
+    pages = [
+        "Beranda",
+        "Tren DBD",
+        "Prediksi",
+        "Faktor Eksternal",
+        "Simulasi",
+        "Analisis Provinsi",
+        "Tentang Aplikasi"
+    ]
+
+    if "page" not in st.session_state:
+        st.session_state.page = "Beranda"
+
     page = st.radio(
         "Navigasi",
-        ["Beranda", "Tren DBD", "Prediksi",
-         "Faktor Eksternal", "Simulasi"],
+        pages,
+        index=pages.index(st.session_state.page),
         label_visibility="collapsed",
     )
+
+    st.session_state.page = page
+
     st.divider()
 
     if has_data and st.button("Refresh Data Supabase"):
@@ -133,3 +149,11 @@ elif page == "Simulasi":
         st.stop()
     from app_pages.simulasi import show
     show(df_merge)
+
+elif page == "Analisis Provinsi":
+    from app_pages.analisis_provinsi import show
+    show(df_merge)
+
+elif page == "Tentang Aplikasi":
+    from app_pages.about import show
+    show()
