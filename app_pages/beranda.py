@@ -5,12 +5,102 @@ pages/beranda.py — Halaman Beranda: ringkasan statistik nasional
 import streamlit as st
 import matplotlib.pyplot as plt
 from utils.charts import style_ax, ACCENT, GRID_COL, TEXT_COL, DARK_BG
-
+from utils.risk_map import show_risk_map
+from streamlit_folium import st_folium
 
 def show(df_merge):
     st.title("🦟 Sistem Prediksi Kasus DBD Indonesia")
-    st.markdown("Ringkasan statistik nasional berdasarkan data real-time dari Supabase.")
 
+    st.markdown(
+        "### 🗺️ Peta Risiko DBD Indonesia 2026"
+    )
+
+    map_obj, risk_df = show_risk_map(
+        df_merge,
+        "assets\indonesia_provinces.geojson.json"
+    )
+
+    st_folium(
+        map_obj,
+        width=1200,
+        height=650
+    )
+    st.info("""
+    💡 **Interpretasi Peta Risiko**
+
+    Peta ini menampilkan tingkat risiko DBD setiap provinsi berdasarkan hasil analisis dan prediksi sistem untuk tahun 2026.
+
+    Warna provinsi menunjukkan tingkat risiko relatif yang dapat digunakan sebagai dasar pemantauan, perencanaan intervensi, dan pengambilan keputusan dalam pengendalian DBD di Indonesia.
+    """)
+    st.markdown("### 📖 Keterangan Tingkat Risiko")
+
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        st.success(
+            """
+    🟢 **AMAN**
+
+    Risiko DBD rendah.
+
+    Wilayah relatif terkendali dan tidak menunjukkan potensi peningkatan kasus yang signifikan.
+    """
+        )
+
+    with col2:
+        st.warning(
+            """
+    🟡 **WASPADA**
+
+    Risiko DBD sedang.
+
+    Perlu peningkatan kewaspadaan karena terdapat potensi kenaikan kasus.
+    """
+        )
+
+    with col3:
+        st.warning(
+            """
+    🟠 **TINGGI**
+
+    Risiko DBD tinggi.
+
+    Diperlukan pemantauan intensif dan upaya pencegahan yang lebih aktif.
+    """
+        )
+
+    with col4:
+        st.error(
+            """
+    🔴 **BAHAYA**
+
+    Risiko DBD sangat tinggi.
+
+    Wilayah memiliki potensi kejadian luar biasa (KLB) dan memerlukan tindakan segera.
+    """
+        )
+    selected_province = st.selectbox(
+        "📍 Pilih provinsi untuk dianalisis lebih lanjut",
+        sorted(risk_df["provinsi"].unique())
+    )
+
+    if st.button(
+        "🔍 Lihat Analisis Provinsi"
+    ):
+
+        st.session_state[
+            "selected_province"
+        ] = selected_province
+
+        st.session_state[
+            "page"
+        ] = "Analisis Provinsi"
+
+        st.rerun()
+
+    st.markdown(
+        "Ringkasan statistik nasional berdasarkan data real-time dari Supabase."
+    )
     # ── Hitung statistik ──────────────────────────────────────────────────────
     total_kasus  = int(df_merge["jumlah_kasus_bulat"].sum())
     top_provinsi = df_merge.groupby("provinsi")["jumlah_kasus_bulat"].sum().idxmax()
