@@ -1,37 +1,36 @@
 """
-utils/db.py — Koneksi Supabase & preprocessing data
+utils/db.py — Koneksi Supabase SDK & preprocessing data
 """
 
+import warnings
 import streamlit as st
 import pandas as pd
-from sqlalchemy import create_engine, text
+from supabase import create_client, Client
+
+warnings.filterwarnings("ignore")
 
 
-@st.cache_resource(show_spinner="Menghubungkan ke Supabase...")
-def get_engine():
+@st.cache_resource(show_spinner="Menghubungkan ke Supabase API...")
+def get_supabase_client():
+    """Inisialisasi Client Supabase SDK tanpa password DB"""
     try:
-        cfg = st.secrets["supabase"]
-        url = (
-            f"postgresql://{cfg['user']}:{cfg['password']}"
-            f"@{cfg['host']}:{cfg['port']}/{cfg['db']}"
-        )
-        engine = create_engine(url, pool_pre_ping=True)
-        with engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
-        return engine, None
+        url: str = st.secrets["SUPABASE_URL"]
+        key: str = st.secrets["SUPABASE_KEY"]
+        supabase: Client = create_client(url, key)
+        return supabase, None
     except Exception as e:
         return None, str(e)
 
 
-@st.cache_data(show_spinner="Memuat data dari Supabase...", ttl=3600)
+@st.cache_data(show_spinner="Memuat data dari Supabase via API...", ttl=3600)
 def load_data():
     """
-    Ambil semua tabel dari Supabase, lakukan preprocessing & merge.
+    Ambil semua tabel dari Supabase SDK, lakukan preprocessing & merge.
     Return: (df_merge, error_string | None)
     """
-    engine, err = get_engine()
+    supabase, err = get_supabase_client()
     if err:
-        return None, err
+        return None, f"Gagal inisialisasi Client: {err}"
 
     tabel_list = [
         "tabel_penduduk",
@@ -44,10 +43,21 @@ def load_data():
     data = {}
     try:
         for tbl in tabel_list:
-            data[tbl] = pd.read_sql(f"SELECT * FROM {tbl}", engine)
+            # Mengambil data menggunakan SDK (.execute())
+            response = supabase.table(tbl).select("*").execute()
+            
+            # Mengubah hasil JSON/List of Dict menjadi Pandas DataFrame
+            data[tbl] = pd.DataFrame(response.data)
+            
+            # Validasi jika tabel ternyata kosong di database
+            if data[tbl].empty:
+                return None, f"Tabel '{tbl}' kosong di Supabase."
+                
     except Exception as e:
-        return None, str(e)
+        return None, f"Gagal mengambil tabel {tbl}: {str(e)}"
 
+    # ── Logika Preprocessing & Cleaning (Tetap Sama dengan Kode Lamamu) ───────
+    
     # Standardisasi kolom
     for df in data.values():
         df.columns = df.columns.str.lower().str.strip().str.replace(" ", "_")
