@@ -101,7 +101,7 @@ def show(df_merge):
     st.markdown(
         "Ringkasan statistik nasional berdasarkan data real-time dari Supabase."
     )
-    # ── Hitung statistik ──────────────────────────────────────────────────────
+    # ── Hitung statistik ─────────────────────────────────────────────────────
     total_kasus  = int(df_merge["jumlah_kasus_bulat"].sum())
     top_provinsi = df_merge.groupby("provinsi")["jumlah_kasus_bulat"].sum().idxmax()
     tahun_max    = int(df_merge["tahun"].max())
