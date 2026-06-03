@@ -129,7 +129,7 @@ def show(df_merge):
 
     st.divider()
 
-# ── AI National Summary ───────────────────────────────────────────────────
+# ── AI National Summary ──────────────────────────────────────────────────
     st.subheader("🤖 AI National Summary")
 
     # Hitung provinsi naik/turun
