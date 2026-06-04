@@ -106,7 +106,7 @@ def show(df_merge):
     st.markdown(
         "Ringkasan statistik nasional berdasarkan data real-time dari Supabase."
     )
-    # ── Hitung statistik ──────────────────────────────────────────────────────
+    # ── Hitung statistik ─────────────────────────────────────────────────────
     total_kasus  = int(df_merge["jumlah_kasus_bulat"].sum())
     top_provinsi = df_merge.groupby("provinsi")["jumlah_kasus_bulat"].sum().idxmax()
     tahun_max    = int(df_merge["tahun"].max())
@@ -115,7 +115,7 @@ def show(df_merge):
     pct          = ((kasus_max - kasus_prev) / kasus_prev * 100) if kasus_prev > 0 else 0
     tren_label   = f"{'▲' if pct > 0 else '▼'} {abs(pct):.1f}%"
 
-    # ── 4 Metric Cards ────────────────────────────────────────────────────────
+    # ── 4 Metric Cards ───────────────────────────────────────────────────────
     c1, c2, c3, c4 = st.columns(4)
     for col, label, value, sub in [
         (c1, "Total Kasus Nasional", f"{total_kasus:,}",  "2020–2025"),
@@ -134,7 +134,7 @@ def show(df_merge):
 
     st.divider()
 
-# ── AI National Summary ───────────────────────────────────────────────────
+# ── AI National Summary ──────────────────────────────────────────────────
     st.subheader("🤖 AI National Summary")
 
     # Hitung provinsi naik/turun
