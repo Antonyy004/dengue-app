@@ -78,10 +78,35 @@ def show(df_merge):
         container    = col1 if i % 2 == 0 else col2
         sliders[key] = container.slider(label, mn, mx, get_default(key, fb))
 
-    if not st.button("🔬 Jalankan Simulasi", type="primary"):
+    if st.button(
+        "🔬 Jalankan Simulasi",
+        type="primary"
+    ):
+
+        result = simulasi_prediksi(
+            prov_sim,
+            **sliders
+        )
+
+        st.session_state["sim_result"] = result
+        st.session_state["sim_prov"] = prov_sim
+        st.session_state["sim_sliders"] = sliders
+
+    if "sim_result" not in st.session_state:
         return
 
-    result = simulasi_prediksi(prov_sim, **sliders)
+    result = st.session_state["sim_result"]
+    prov_sim = st.session_state["sim_prov"]
+    sliders = st.session_state["sim_sliders"]
+
+    result = simulasi_prediksi(
+        prov_sim,
+        **sliders
+    )
+
+    st.session_state["sim_result"] = result
+    st.session_state["sim_prov"] = prov_sim
+    st.session_state["sim_sliders"] = sliders
 
     with st.expander("🔍 Debug Info"):
         st.write("Sliders yang dikirim:", sliders)
@@ -280,3 +305,224 @@ PENTING: jangan gunakan markdown seperti ** atau ##, tulis teks biasa saja."""
             </div>""",
             unsafe_allow_html=True,
         )
+
+        # =====================================================
+        # EXPORT LAPORAN SIMULASI
+        # =====================================================
+
+        from utils.export_utils import (
+            dataframe_to_csv,
+            dataframe_to_excel,
+            generate_pdf_via_api
+        )
+
+        st.divider()
+
+        st.markdown("""
+        <div style="
+        background:linear-gradient(135deg,#0f172a,#1e293b);
+        padding:25px;
+        border-radius:18px;
+        border:1px solid #06b6d4;
+        margin-bottom:20px;
+        box-shadow:0 0 25px rgba(6,182,212,.25);
+        ">
+        <h2 style="color:white;margin-bottom:10px;">
+        📥 Export Laporan Simulasi
+        </h2>
+
+        <p style="color:#e2e8f0;">
+        Unduh hasil simulasi variabel dalam format CSV, Excel, dan PDF.
+        </p>
+
+        </div>
+        """, unsafe_allow_html=True)
+
+        col_csv, col_excel, col_pdf = st.columns(3)
+
+        export_df = pd.DataFrame([
+            {
+                "Provinsi": prov_sim,
+                "Model": result["model"],
+                "Baseline": result["baseline"],
+                "Simulasi": result["simulasi"],
+                "Selisih": result["selisih"],
+                "Persentase": result["persen"]
+            }
+        ])
+
+        with col_csv:
+
+            st.markdown("""
+            <div style="
+            background:#14532d;
+            padding:14px;
+            border-radius:10px;
+            color:white;
+            font-weight:bold;
+            ">
+            📋 CSV
+            </div>
+            """, unsafe_allow_html=True)
+
+            st.download_button(
+                "⬇ Download CSV",
+                dataframe_to_csv(export_df),
+                "simulasi_dbd.csv",
+                "text/csv",
+                use_container_width=True
+            )
+
+        with col_excel:
+
+            st.markdown("""
+            <div style="
+            background:#1e3a5f;
+            padding:14px;
+            border-radius:10px;
+            color:white;
+            font-weight:bold;
+            ">
+            📊 Excel
+            </div>
+            """, unsafe_allow_html=True)
+
+            st.download_button(
+                "⬇ Download Excel",
+                dataframe_to_excel(export_df),
+                "simulasi_dbd.xlsx",
+                use_container_width=True
+            )
+
+        with col_pdf:
+
+            st.markdown("""
+            <div style="
+            background:#4d4d00;
+            padding:14px;
+            border-radius:10px;
+            color:white;
+            font-weight:bold;
+            ">
+            📄 PDF
+            </div>
+            """, unsafe_allow_html=True)
+
+            if st.button(
+                "📄 Generate PDF Simulasi",
+                use_container_width=True
+            ):
+
+                try:
+
+                    slider_html = ""
+
+                    for k, v in sliders.items():
+
+                        slider_html += f"""
+                        <tr>
+                            <td>{k}</td>
+                            <td>{v}</td>
+                        </tr>
+                        """
+
+                    policy_html = ""
+
+                    if policy_rows:
+
+                        for row in policy_rows:
+
+                            policy_html += f"""
+                            <tr>
+                                <td>{row['Variabel']}</td>
+                                <td>{row['Baseline']}</td>
+                                <td>{row['Simulasi']}</td>
+                                <td>{row['Perubahan']}</td>
+                                <td>{row['Delta (%)']}</td>
+                            </tr>
+                            """
+
+                    html = f"""
+
+                    <div class="section">
+                    <h3>⚙️ Ringkasan Simulasi</h3>
+
+                    <div class="card">
+
+                    <p><b>Provinsi:</b> {prov_sim}</p>
+                    <p><b>Model:</b> {result['model']}</p>
+                    <p><b>Baseline:</b> {result['baseline']:,}</p>
+                    <p><b>Simulasi:</b> {result['simulasi']:,}</p>
+                    <p><b>Selisih:</b> {result['selisih']:,}</p>
+                    <p><b>Perubahan:</b> {result['persen']:+.1f}%</p>
+
+                    </div>
+                    </div>
+
+                    <div class="section">
+                    <h3>🎛️ Parameter Simulasi</h3>
+
+                    <table>
+                    <tr>
+                        <th>Variabel</th>
+                        <th>Nilai Simulasi</th>
+                    </tr>
+
+                    {slider_html}
+
+                    </table>
+                    </div>
+
+                    <div class="section">
+                    <h3>📋 Policy Impact Analysis</h3>
+
+                    <table>
+
+                    <tr>
+                        <th>Variabel</th>
+                        <th>Baseline</th>
+                        <th>Simulasi</th>
+                        <th>Perubahan</th>
+                        <th>Delta (%)</th>
+                    </tr>
+
+                    {policy_html}
+
+                    </table>
+
+                    </div>
+
+                    <div class="section">
+                    <h3>📝 Dampak Perubahan Variabel</h3>
+
+                    <div class="card">
+
+                    {ai_policy}
+
+                    </div>
+
+                    </div>
+
+                    """
+
+                    pdf_bytes = generate_pdf_via_api(
+                        title="Laporan Simulasi Variabel",
+                        html_content=html,
+                        footer_text=f"Sistem Prediksi Kasus DBD Indonesia - Simulasi Variabel - {prov_sim}"
+                    )
+
+                    st.download_button(
+                        "⬇ Download PDF Simulasi",
+                        pdf_bytes,
+                        f"simulasi_{prov_sim}.pdf",
+                        "application/pdf",
+                        use_container_width=True
+                    )
+
+                except Exception as e:
+
+                    st.error(
+                        f"Gagal membuat PDF: {e}"
+                    )
+
+
