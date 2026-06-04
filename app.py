@@ -52,6 +52,25 @@ from utils.model import load_model_bundle
 df_merge, data_error      = load_data()
 model_bundle, model_error = load_model_bundle()
 
+# =====================================
+# NORMALISASI NAMA PROVINSI
+# =====================================
+
+if df_merge is not None and not df_merge.empty:
+
+    province_mapping = {
+        "Dki Jakarta": "DKI Jakarta",
+        "Di Yogyakarta": "DI Yogyakarta",
+        "Daerah Istimewa Yogyakarta": "DI Yogyakarta"
+    }
+
+    df_merge["provinsi"] = (
+        df_merge["provinsi"]
+        .astype(str)
+        .str.strip()
+        .replace(province_mapping)
+    )
+
 has_data  = df_merge is not None and not df_merge.empty
 has_model = model_bundle is not None
 

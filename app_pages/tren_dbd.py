@@ -3,10 +3,15 @@ pages/tren_dbd.py — Visualisasi tren DBD & Province Profile
 """
 
 import streamlit as st
+import pandas as pd
 import matplotlib.pyplot as plt
 from utils.charts import style_ax, ACCENT, GRID_COL, TEXT_COL, DARK_BG, PALETTE
 from utils.db import get_provinsi_list, get_tahun_list
-
+from utils.export_utils import (
+    dataframe_to_csv,
+    dataframe_to_excel,
+    generate_pdf_via_api
+)
 
 def show(df_merge):
     st.title("📈 Visualisasi Tren DBD")
@@ -151,3 +156,316 @@ def show(df_merge):
         plt.close()
 
         st.divider()
+
+    # ==================================================
+    # EXPORT LAPORAN TREN DBD
+    # ==================================================
+
+    st.markdown("""
+    <div style="
+    padding:25px;
+    border-radius:20px;
+    background:linear-gradient(
+    135deg,
+    rgba(15,23,42,0.98),
+    rgba(30,41,59,0.98)
+    );
+    border:1px solid rgba(34,211,238,0.4);
+    box-shadow:0 0 25px rgba(34,211,238,0.15);
+    margin-bottom:25px;
+    ">
+
+    <h2 style="
+    margin-bottom:10px;
+    color:white;
+    ">
+    📥 Export Laporan Tren DBD
+    </h2>
+
+    <p style="
+    color:#cbd5e1;
+    font-size:15px;
+    margin-bottom:0px;
+    ">
+    Unduh hasil analisis tren DBD dalam format CSV, Excel, dan PDF.
+    </p>
+
+    </div>
+    """, unsafe_allow_html=True)
+
+    export_df = df_f[
+        ["provinsi", "tahun", "jumlah_kasus_bulat"]
+    ].copy()
+
+    col1, col2, col3 = st.columns(3)
+
+    # ==========================
+    # CSV
+    # ==========================
+
+    with col1:
+
+        st.success("📋 CSV")
+
+        st.download_button(
+            "⬇ Download CSV",
+            dataframe_to_csv(export_df),
+            file_name="tren_dbd.csv",
+            mime="text/csv",
+            use_container_width=True
+        )
+
+    # ==========================
+    # EXCEL
+    # ==========================
+
+    with col2:
+
+        st.info("📊 Excel")
+
+        st.download_button(
+            "⬇ Download Excel",
+            dataframe_to_excel(export_df),
+            file_name="tren_dbd.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True
+        )
+
+    # ==========================
+    # PDF
+    # ==========================
+
+    with col3:
+
+        st.warning("📄 PDF")
+
+        if st.button(
+            "📄 Generate PDF Tren",
+            use_container_width=True
+        ):
+
+            try:
+
+                # --------------------------------
+                # Ringkasan
+                # --------------------------------
+
+                total_cases = int(
+                    df_f["jumlah_kasus_bulat"].sum()
+                )
+
+                prov_summary = (
+                    df_f.groupby("provinsi")
+                    ["jumlah_kasus_bulat"]
+                    .sum()
+                    .sort_values(ascending=False)
+                )
+
+                top_prov = (
+                    prov_summary.index[0]
+                    if len(prov_summary)
+                    else "-"
+                )
+
+                low_prov = (
+                    prov_summary.index[-1]
+                    if len(prov_summary)
+                    else "-"
+                )
+
+                # --------------------------------
+                # Tabel Historis
+                # --------------------------------
+
+                trend_table = ""
+
+                trend_df = (
+                    df_f.groupby(
+                        ["provinsi", "tahun"]
+                    )["jumlah_kasus_bulat"]
+                    .sum()
+                    .reset_index()
+                )
+
+                for _, row in trend_df.iterrows():
+
+                    trend_table += f"""
+                    <tr>
+                        <td>{row['provinsi']}</td>
+                        <td>{int(row['tahun'])}</td>
+                        <td>{int(row['jumlah_kasus_bulat']):,}</td>
+                    </tr>
+                    """
+
+                # --------------------------------
+                # Province Profile
+                # --------------------------------
+
+                profile_html = ""
+
+                for prov in sel_prov:
+
+                    df_prov = df_f[
+                        df_f["provinsi"] == prov
+                    ]
+
+                    kasus_per_tahun = (
+                        df_prov.groupby("tahun")
+                        ["jumlah_kasus_bulat"]
+                        .sum()
+                    )
+
+                    total_kasus = int(
+                        df_prov["jumlah_kasus_bulat"].sum()
+                    )
+
+                    rata_kasus = int(
+                        kasus_per_tahun.mean()
+                    )
+
+                    profile_html += f"""
+
+                    <div class="card">
+
+                    <h4>{prov}</h4>
+
+                    <p>
+                    <b>Total Kasus:</b>
+                    {total_kasus:,}
+                    </p>
+
+                    <p>
+                    <b>Rata-rata per Tahun:</b>
+                    {rata_kasus:,}
+                    </p>
+
+                    </div>
+
+                    """
+
+                # --------------------------------
+                # Insight
+                # --------------------------------
+
+                insight_text = f"""
+                Analisis dilakukan terhadap
+                {len(sel_prov)} provinsi
+                pada rentang tahun
+                {thn_range[0]} hingga {thn_range[1]}.
+
+                Provinsi dengan jumlah kasus
+                tertinggi adalah {top_prov},
+                sedangkan yang terendah adalah
+                {low_prov}.
+                """
+
+                # --------------------------------
+                # HTML PDF
+                # --------------------------------
+
+                html_content = f"""
+
+                <div class="section">
+
+                <h3>📈 Ringkasan Analisis</h3>
+
+                <div class="card">
+
+                <p>
+                <b>Jumlah Provinsi:</b>
+                {len(sel_prov)}
+                </p>
+
+                <p>
+                <b>Rentang Tahun:</b>
+                {thn_range[0]} - {thn_range[1]}
+                </p>
+
+                <p>
+                <b>Total Kasus:</b>
+                {total_cases:,}
+                </p>
+
+                <p>
+                <b>Provinsi Tertinggi:</b>
+                {top_prov}
+                </p>
+
+                <p>
+                <b>Provinsi Terendah:</b>
+                {low_prov}
+                </p>
+
+                <p>
+                <b>Tipe Grafik:</b>
+                {chart_type}
+                </p>
+
+                </div>
+
+                </div>
+
+                <div class="section">
+
+                <h3>📊 Data Historis Lengkap</h3>
+
+                <table>
+
+                <tr>
+                    <th>Provinsi</th>
+                    <th>Tahun</th>
+                    <th>Jumlah Kasus</th>
+                </tr>
+
+                {trend_table}
+
+                </table>
+
+                </div>
+
+                <div class="section">
+
+                <h3>📋 Province Profile</h3>
+
+                {profile_html}
+
+                </div>
+
+                <div class="section">
+
+                <h3>🤖 Insight Analisis</h3>
+
+                <div class="card">
+
+                <p>
+                {insight_text}
+                </p>
+
+                </div>
+
+                </div>
+
+                """
+
+                pdf_bytes = generate_pdf_via_api(
+                    "Laporan Tren DBD",
+                    html_content,
+                    footer_text=(
+                        "Sistem Prediksi Kasus DBD Indonesia - "
+                        "Tren DBD"
+                    )
+                )
+
+                st.download_button(
+                    "⬇ Download PDF",
+                    pdf_bytes,
+                    file_name="laporan_tren_dbd.pdf",
+                    mime="application/pdf",
+                    use_container_width=True
+                )
+
+            except Exception as e:
+
+                st.error(
+                    f"Gagal membuat PDF: {e}"
+                )

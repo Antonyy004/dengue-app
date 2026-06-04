@@ -3,11 +3,16 @@ pages/prediksi.py — Prediksi kasus DBD per provinsi
 """
 
 import streamlit as st
+import pandas as pd
 import matplotlib.pyplot as plt
 from utils.charts import style_ax, ACCENT, DARK_BG, TEXT_COL
 from utils.db import get_provinsi_list, get_tahun_list
 from utils.model import generate_insight, get_province_series
-
+from utils.export_utils import (
+    dataframe_to_csv,
+    dataframe_to_excel,
+    generate_pdf_via_api
+)
 
 def show(df_merge):
     st.title("🔮 Prediksi Kasus DBD")
@@ -23,11 +28,30 @@ def show(df_merge):
         thn_pred = st.selectbox("Tahun Prediksi",
                                 list(range(max_thn + 1, max_thn + 6)))
 
-    if not st.button("🔮 Jalankan Prediksi", type="primary"):
+
+    if st.button("🔮 Jalankan Prediksi", type="primary"):
+
+        with st.spinner("Menghitung..."):
+
+            ins = generate_insight(
+                df_merge,
+                prov_pred,
+                thn_pred
+            )
+
+            st.session_state["pred_result"] = ins
+            st.session_state["pred_prov"] = prov_pred
+            st.session_state["pred_year"] = thn_pred
+
+
+    if "pred_result" not in st.session_state:
         return
 
-    with st.spinner("Menghitung..."):
-        ins = generate_insight(df_merge, prov_pred, thn_pred)
+
+    ins = st.session_state["pred_result"]
+    prov_pred = st.session_state["pred_prov"]
+    thn_pred = st.session_state["pred_year"]
+
 
     if "error" in ins:
         st.error(ins["error"])
@@ -282,3 +306,262 @@ PENTING:
     plt.close()
 
     st.session_state["last_pred"] = ins
+
+    st.divider()
+
+    st.markdown("""
+        <div style="
+        padding:25px;
+        border-radius:20px;
+        background:linear-gradient(
+        135deg,
+        rgba(15,23,42,0.98),
+        rgba(30,41,59,0.98)
+        );
+        border:1px solid rgba(34,211,238,0.4);
+        box-shadow:0 0 25px rgba(34,211,238,0.15);
+        margin-bottom:25px;
+        ">
+
+        <h2 style="
+        margin-bottom:10px;
+        color:white;
+        ">
+        📥 Export Laporan Prediksi
+        </h2>
+
+        <p style="
+        color:#cbd5e1;
+        font-size:15px;
+        margin-bottom:0px;
+        ">
+        Unduh hasil prediksi DBD dalam format CSV, Excel, dan PDF.
+        </p>
+
+        </div>
+        """, unsafe_allow_html=True)
+    # ==================================
+    # DATA EXPORT
+    # ==================================
+
+    export_df = pd.DataFrame({
+        "Provinsi": [prov_pred],
+        "Tahun Prediksi": [thn_pred],
+        "Kasus Aktual": [ins["aktual"]],
+        "Prediksi Kasus": [ins["prediksi"]],
+        "Perubahan (%)": [round(ins["persen"], 2)],
+        "Risk Level": [risk_level],
+        "Outbreak Probability": [outbreak_prob]
+    })
+
+    col1, col2, col3 = st.columns(3)
+
+    # =========================
+    # CSV
+    # =========================
+
+    with col1:
+
+        st.success("📋 CSV")
+
+        st.download_button(
+            "⬇ Download CSV",
+            dataframe_to_csv(export_df),
+            file_name=f"prediksi_{prov_pred}_{thn_pred}.csv",
+            mime="text/csv",
+            use_container_width=True
+        )
+
+    # =========================
+    # EXCEL
+    # =========================
+
+    with col2:
+
+        st.info("📊 Excel")
+
+        st.download_button(
+            "⬇ Download Excel",
+            dataframe_to_excel(export_df),
+            file_name=f"prediksi_{prov_pred}_{thn_pred}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True
+        )
+
+    # =========================
+    # PDF
+    # =========================
+
+    with col3:
+
+        st.warning("📄 PDF")
+
+        if st.button(
+            "📄 Generate PDF Prediksi",
+            use_container_width=True
+        ):
+
+            try:
+
+                history_table = ""
+
+                for year, value in series.items():
+
+                    history_table += f"""
+                    <tr>
+                        <td>{year}</td>
+                        <td>{int(value):,}</td>
+                    </tr>
+                    """
+
+                history_table += f"""
+                <tr>
+                    <td><b>{thn_pred}</b></td>
+                    <td><b>{ins['prediksi']:,}</b></td>
+                </tr>
+                """
+
+                recommendations_html = ""
+
+                try:
+
+                    if ai_error:
+
+                        for emoji, title, desc in actions:
+
+                            recommendations_html += f"""
+                            <li>
+                            <b>{emoji} {title}</b><br>
+                            {desc}
+                            </li>
+                            """
+
+                    else:
+
+                        for item in ai_actions:
+
+                            recommendations_html += f"""
+                            <li>{item}</li>
+                            """
+
+                except:
+
+                    recommendations_html = """
+                    <li>Fogging massal</li>
+                    <li>Siapkan fasilitas kesehatan</li>
+                    <li>Perbaikan sanitasi darurat</li>
+                    <li>Kampanye masyarakat</li>
+                    <li>Aktivasi posko DBD</li>
+                    """
+
+                html_content = f"""
+
+                <div class="section">
+
+                    <h3>📊 Ringkasan Prediksi</h3>
+
+                    <div class="card">
+
+                        <p><b>Provinsi:</b> {prov_pred}</p>
+
+                        <p><b>Tahun Prediksi:</b> {thn_pred}</p>
+
+                        <p><b>Kasus Aktual:</b> {ins['aktual']:,}</p>
+
+                        <p><b>Prediksi Kasus:</b> {ins['prediksi']:,}</p>
+
+                        <p><b>Perubahan:</b> {ins['persen']:+.1f}%</p>
+
+                        <p><b>Model:</b> {ins['model']}</p>
+
+                    </div>
+
+                </div>
+
+                <div class="section">
+
+                    <h3>⚠ Risk Assessment</h3>
+
+                    <div class="card">
+
+                        <p><b>Risk Level:</b> {risk_level}</p>
+
+                        <p><b>Deskripsi:</b> {risk_desc}</p>
+
+                        <p><b>Outbreak Probability:</b> {outbreak_prob}%</p>
+
+                    </div>
+
+                </div>
+
+                <div class="section">
+
+                    <h3>🤖 Insight Sistem</h3>
+
+                    <div class="card">
+
+                        <p><b>{ins['status']}</b></p>
+
+                        <p>{ins['saran']}</p>
+
+                    </div>
+
+                </div>
+
+                <div class="section">
+
+                <h3>📋 Recommended Actions</h3>
+
+                <div class="card">
+
+                <ul>
+
+                {recommendations_html}
+
+                </ul>
+
+                </div>
+
+                </div>
+
+                <div class="section">
+
+                    <h3>📈 Data Historis & Prediksi</h3>
+
+                    <table>
+
+                        <tr>
+                            <th>Tahun</th>
+                            <th>Jumlah Kasus</th>
+                        </tr>
+
+                        {history_table}
+
+                    </table>
+
+                </div>
+
+                """
+
+                pdf_bytes = generate_pdf_via_api(
+                    f"Laporan Prediksi DBD - {prov_pred}",
+                    html_content,
+                    footer_text=(
+                        f"Sistem Prediksi Kasus DBD Indonesia - "
+                        f"Prediksi - "
+                        f"{prov_pred} - "
+                        f"{thn_pred}"
+                    )
+                )
+
+                st.download_button(
+                    "⬇ Download PDF",
+                    pdf_bytes,
+                    file_name=f"prediksi_{prov_pred}_{thn_pred}.pdf",
+                    mime="application/pdf",
+                    use_container_width=True
+                )
+
+            except Exception as e:
+
+                st.error(f"Gagal membuat PDF: {e}")
