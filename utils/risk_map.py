@@ -60,10 +60,10 @@ def build_risk_dataframe(df_merge):
             row["provinsi"]
         ).strip()
 
-        # Menyamakan nama provinsi dengan GeoJSON
         province_mapping = {
             "Dki Jakarta": "DKI Jakarta",
-            "Di Yogyakarta": "Daerah Istimewa Yogyakarta"
+            "Di Yogyakarta": "DI Yogyakarta",
+            "Daerah Istimewa Yogyakarta": "DI Yogyakarta"
         }
 
         provinsi = province_mapping.get(

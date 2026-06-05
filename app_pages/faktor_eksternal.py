@@ -46,10 +46,16 @@ def show(df_merge):
     col1, col2 = st.columns([2, 1])
     with col1:
         prov_fi = st.selectbox("Provinsi", prov_opts)
+        if st.session_state.get("last_faktor_prov") != prov_fi:
+            st.session_state["last_faktor_prov"] = prov_fi
+            st.session_state["show_faktor"] = False
     with col2:
         top_n = st.slider("Top-N Fitur", 3, 15, 10)
 
-    if not st.button("📊 Tampilkan Analisis", type="primary"):
+    if st.button("📊 Tampilkan Analisis", type="primary"):
+        st.session_state["show_faktor"] = True
+
+    if not st.session_state.get("show_faktor", False):
         return
 
     rf_models      = get_bundle("rf_models")
@@ -229,3 +235,238 @@ PENTING: jangan gunakan markdown seperti ** atau ##, tulis teks biasa saja."""
 | persentase_akses_air_layak | Akses air bersih layak (%) |
 | jumlah_penduduk | Jumlah penduduk provinsi |
 """)
+    
+    # =====================================================
+    # EXPORT LAPORAN FAKTOR EKSTERNAL
+    # =====================================================
+
+    from utils.export_utils import (
+        dataframe_to_csv,
+        dataframe_to_excel,
+        generate_pdf_via_api
+    )
+
+    st.divider()
+
+    st.markdown("""
+    <div style="
+    background:linear-gradient(135deg,#0f172a,#1e293b);
+    padding:25px;
+    border-radius:18px;
+    border:1px solid #06b6d4;
+    margin-bottom:20px;
+    box-shadow:0 0 25px rgba(6,182,212,.25);
+    ">
+    <h2 style="color:white;margin-bottom:10px;">
+    📥 Export Laporan Faktor Eksternal
+    </h2>
+
+    <p style="color:#e2e8f0;">
+    Unduh hasil analisis faktor eksternal dalam format CSV, Excel, dan PDF.
+    </p>
+
+    </div>
+    """, unsafe_allow_html=True)
+
+    col_csv, col_excel, col_pdf = st.columns(3)
+
+    # =====================================================
+    # DATA EXPORT
+    # =====================================================
+
+    export_df = fi_df.copy()
+
+    export_df["Provinsi"] = prov_fi
+    export_df["Model"] = t_sfx
+
+    # =====================================================
+    # CSV
+    # =====================================================
+
+    with col_csv:
+
+        st.markdown("""
+        <div style="
+        background:#14532d;
+        padding:14px;
+        border-radius:10px;
+        color:white;
+        font-weight:bold;
+        ">
+        📋 CSV
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.download_button(
+            "⬇ Download CSV",
+            dataframe_to_csv(export_df),
+            f"faktor_eksternal_{prov_fi}.csv",
+            "text/csv",
+            use_container_width=True
+        )
+
+    # =====================================================
+    # EXCEL
+    # =====================================================
+
+    with col_excel:
+
+        st.markdown("""
+        <div style="
+        background:#1e3a5f;
+        padding:14px;
+        border-radius:10px;
+        color:white;
+        font-weight:bold;
+        ">
+        📊 Excel
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.download_button(
+            "⬇ Download Excel",
+            dataframe_to_excel(export_df),
+            f"faktor_eksternal_{prov_fi}.xlsx",
+            use_container_width=True
+        )
+
+    # =====================================================
+    # PDF
+    # =====================================================
+
+    with col_pdf:
+
+        st.markdown("""
+        <div style="
+        background:#4d4d00;
+        padding:14px;
+        border-radius:10px;
+        color:white;
+        font-weight:bold;
+        ">
+        📄 PDF
+        </div>
+        """, unsafe_allow_html=True)
+
+        if st.button(
+            "📄 Generate PDF Faktor Eksternal",
+            use_container_width=True
+        ):
+
+            try:
+
+                ranking_html = ""
+
+                for _, row in fi_df.iterrows():
+
+                    ranking_html += f"""
+                    <tr>
+                        <td>{row['Fitur']}</td>
+                        <td>{row['Score']:.4f}</td>
+                    </tr>
+                    """
+
+                fitur_desc_html = """
+                <tr><td>lag_t1, lag_t2, lag_t3</td><td>Kasus DBD 1,2,3 tahun sebelumnya</td></tr>
+                <tr><td>rolling_mean_2/3</td><td>Rata-rata kasus 2 dan 3 tahun terakhir</td></tr>
+                <tr><td>growth_rate</td><td>Persentase perubahan kasus antar tahun</td></tr>
+                <tr><td>curah_hujan</td><td>Curah hujan rata-rata (mm)</td></tr>
+                <tr><td>suhu</td><td>Suhu rata-rata (°C)</td></tr>
+                <tr><td>kelembaban</td><td>Kelembaban udara rata-rata (%)</td></tr>
+                <tr><td>persentase_mobilitas</td><td>Tingkat mobilitas penduduk</td></tr>
+                <tr><td>persentase_akses_sanitasi_layak</td><td>Akses sanitasi layak (%)</td></tr>
+                <tr><td>persentase_akses_air_layak</td><td>Akses air bersih layak (%)</td></tr>
+                <tr><td>jumlah_penduduk</td><td>Jumlah penduduk provinsi</td></tr>
+                """
+
+                html = f"""
+
+                <div class="section">
+
+                <h3>🔬 Ringkasan Analisis</h3>
+
+                <div class="card">
+
+                <p><b>Provinsi:</b> {prov_fi}</p>
+                <p><b>Model:</b> {t_sfx}</p>
+                <p><b>Top Feature:</b> {fi_df.iloc[0]['Fitur']}</p>
+                <p><b>Importance:</b> {fi_df.iloc[0]['Score']:.4f}</p>
+
+                </div>
+
+                </div>
+
+                <div class="section">
+
+                <h3>📊 Ranking Feature Importance</h3>
+
+                <table>
+
+                <tr>
+                    <th>Fitur</th>
+                    <th>Score</th>
+                </tr>
+
+                {ranking_html}
+
+                </table>
+
+                </div>
+
+                <div class="section">
+
+                <h3>🤖 AI Narrative</h3>
+
+                <div class="card">
+
+                {ai_narrative}
+
+                </div>
+
+                </div>
+
+                <div class="section">
+
+                <h3>📋 Keterangan Fitur</h3>
+
+                <table>
+
+                <tr>
+                    <th>Fitur</th>
+                    <th>Keterangan</th>
+                </tr>
+
+                {fitur_desc_html}
+
+                </table>
+
+                </div>
+
+                """
+
+                pdf_bytes = generate_pdf_via_api(
+                    title="Laporan Faktor Eksternal",
+                    html_content=html,
+                    footer_text=f"Sistem Prediksi Kasus DBD Indonesia - Faktor Eksternal - {prov_fi}"
+                )
+
+                st.session_state["faktor_pdf"] = pdf_bytes
+            except Exception as e:
+
+                st.error(
+                    f"Gagal membuat PDF: {e}"
+                )
+
+            # =====================================================
+            # DOWNLOAD PDF
+            # =====================================================
+            if "faktor_pdf" in st.session_state:
+
+                st.download_button(
+                    "⬇ Download PDF",
+                    data=st.session_state["faktor_pdf"],
+                    file_name=f"faktor_eksternal_{prov_fi}.pdf",
+                    mime="application/pdf",
+                    use_container_width=True,
+                    key="download_pdf_faktor"
+                )

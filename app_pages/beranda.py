@@ -7,6 +7,11 @@ import matplotlib.pyplot as plt
 from utils.charts import style_ax, ACCENT, GRID_COL, TEXT_COL, DARK_BG
 from utils.risk_map import show_risk_map
 from streamlit_folium import st_folium
+from utils.export_utils import (
+    dataframe_to_csv,
+    dataframe_to_excel,
+    generate_pdf_via_api
+)
 
 def show(df_merge):
     st.title("🦟 Sistem Prediksi Kasus DBD Indonesia")
@@ -254,6 +259,284 @@ PENTING: jangan gunakan markdown seperti ** atau ##, tulis teks biasa saja."""
                 </div>""",
                 unsafe_allow_html=True,
             )
+
+    # ==================================================
+    # EXPORT NASIONAL
+    # ==================================================
+
+    st.markdown("""
+    <div style="
+    padding:25px;
+    border-radius:20px;
+    background:linear-gradient(
+    135deg,
+    rgba(15,23,42,0.98),
+    rgba(30,41,59,0.98)
+    );
+    border:1px solid rgba(34,211,238,0.4);
+    box-shadow:0 0 25px rgba(34,211,238,0.15);
+    margin-bottom:25px;
+    ">
+
+    <h2 style="
+    margin-bottom:10px;
+    color:white;
+    ">
+    📥 Export Laporan Nasional
+    </h2>
+
+    <p style="
+    color:#cbd5e1;
+    font-size:15px;
+    margin-bottom:0px;
+    ">
+    Unduh ringkasan nasional DBD Indonesia dalam format CSV, Excel, dan PDF.
+    </p>
+
+    </div>
+    """, unsafe_allow_html=True)
+
+    export_df = risk_df.copy()
+
+    col1, col2, col3 = st.columns(3)
+
+    # =====================
+    # CSV
+    # =====================
+
+    with col1:
+
+        st.success("📋 CSV")
+
+        csv_data = dataframe_to_csv(
+            export_df
+        )
+
+        st.download_button(
+            "⬇ Download CSV",
+            csv_data,
+            file_name="dbd_nasional.csv",
+            mime="text/csv",
+            use_container_width=True
+        )
+
+    # =====================
+    # EXCEL
+    # =====================
+
+    with col2:
+
+        st.info("📊 Excel")
+
+        excel_data = dataframe_to_excel(
+            export_df
+        )
+
+        st.download_button(
+            "⬇ Download Excel",
+            excel_data,
+            file_name="dbd_nasional.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True
+        )
+
+    # =====================
+    # PDF
+    # =====================
+
+    with col3:
+
+        st.warning("📄 PDF")
+
+        if st.button(
+            "📄 Generate PDF Nasional",
+            use_container_width=True
+        ):
+
+            try:
+
+                # ==========================
+                # TABEL TREN NASIONAL
+                # ==========================
+
+                trend = (
+                    df_merge
+                    .groupby("tahun")["jumlah_kasus_bulat"]
+                    .sum()
+                    .reset_index()
+                )
+
+                trend_table = ""
+
+                for _, row in trend.iterrows():
+
+                    trend_table += f"""
+                    <tr>
+                        <td>{int(row['tahun'])}</td>
+                        <td>{int(row['jumlah_kasus_bulat']):,}</td>
+                    </tr>
+                    """
+
+                # ==========================
+                # TOP 10 PROVINSI
+                # ==========================
+
+                top10 = (
+                    df_merge.groupby("provinsi")
+                    ["jumlah_kasus_bulat"]
+                    .sum()
+                    .sort_values(ascending=False)
+                    .head(10)
+                    .reset_index()
+                )
+
+                top10_table = ""
+
+                for idx, row in top10.iterrows():
+
+                    top10_table += f"""
+                    <tr>
+                        <td>{idx + 1}</td>
+                        <td>{row['provinsi']}</td>
+                        <td>{int(row['jumlah_kasus_bulat']):,}</td>
+                    </tr>
+                    """
+
+                province_table = ""
+
+                for _, row in risk_df.iterrows():
+
+                    province_table += f"""
+                    <tr>
+                        <td>{row['provinsi']}</td>
+                        <td>{row['ibukota']}</td>
+                        <td>{int(row['prediksi_2026'])}</td>
+                        <td>{row['risiko']}</td>
+                    </tr>
+                    """
+
+                html_content = f"""
+
+                <div class="section">
+
+                <h3>🇮🇩 Ringkasan Nasional DBD Indonesia</h3>
+
+                <div class="card">
+
+                <p><b>Total Kasus Nasional:</b> {total_kasus:,}</p>
+
+                <p><b>Provinsi Tertinggi:</b> {top_provinsi}</p>
+
+                <p><b>Tahun Terakhir:</b> {tahun_max}</p>
+
+                <p><b>Kasus Tahun Terakhir:</b> {kasus_max:,}</p>
+
+                <p><b>Perubahan YoY:</b> {pct:+.1f}%</p>
+
+                </div>
+
+                </div>
+
+                <div class="section">
+
+                <h3>📈 Tren Nasional Kasus DBD</h3>
+
+                <table>
+
+                <tr>
+                <th>Tahun</th>
+                <th>Total Kasus</th>
+                </tr>
+
+                {trend_table}
+
+                </table>
+
+                </div>
+
+                <div class="section">
+
+                <h3>🏆 Top 10 Provinsi Kasus Tertinggi</h3>
+
+                <table>
+
+                <tr>
+                <th>Ranking</th>
+                <th>Provinsi</th>
+                <th>Total Kasus</th>
+                </tr>
+
+                {top10_table}
+
+                </table>
+
+                </div>
+
+                <div class="section">
+
+                <h3>📋 Data DBD Seluruh Provinsi Indonesia</h3>
+
+                <table>
+
+                <tr>
+                <th>Provinsi</th>
+                <th>Ibu Kota</th>
+                <th>Prediksi 2026</th>
+                <th>Risiko</th>
+                </tr>
+
+                {province_table}
+
+                </table>
+
+                </div>
+
+                <div class="section">
+
+                <h3>🤖 Ringkasan AI Nasional</h3>
+
+                <div class="card">
+
+                <p>{ai_text}</p>
+
+                </div>
+
+                </div>
+
+                <div class="section">
+
+                <h3>⚠️ Provinsi Risiko Tinggi</h3>
+
+                <div class="card">
+
+                <p>{prov_naik_str}</p>
+
+                </div>
+
+                </div>
+
+                """
+
+                pdf_bytes = generate_pdf_via_api(
+                    "Laporan Nasional DBD Indonesia",
+                    html_content,
+                    footer_text=
+                    "Sistem Prediksi Kasus DBD Indonesia - Beranda Nasional"
+                )
+
+                st.download_button(
+                    "⬇ Download PDF",
+                    pdf_bytes,
+                    file_name="laporan_nasional_dbd.pdf",
+                    mime="application/pdf",
+                    use_container_width=True
+                )
+
+            except Exception as e:
+
+                st.error(
+                    f"Gagal membuat PDF: {e}"
+                )
 
     st.divider()
 

@@ -115,11 +115,13 @@ def show():
     font-size:18px;
     line-height:1.8;
     ">
-
-    Platform analitik berbasis Artificial Intelligence dan Machine Learning
-    yang dirancang untuk membantu memprediksi, menganalisis, dan
-    memvisualisasikan perkembangan kasus Demam Berdarah Dengue (DBD)
-    di Indonesia.
+    
+    Sistem Prediksi Kasus DBD Indonesia merupakan platform analitik berbasis
+    machine learning yang dirancang untuk membantu proses pemantauan, analisis, 
+    dan prediksi kasus Demam Berdarah Dengue (DBD) di seluruh provinsi Indonesia. 
+    Sistem ini mengintegrasikan data historis kasus DBD dan faktor eksternal 
+    lingkungan untuk menghasilkan prediksi yang dapat digunakan sebagai pendukung 
+    pengambilan keputusan.
 
     </p>
 
@@ -148,7 +150,7 @@ def show():
     # QUICK STATS
     # ==================================================
 
-    c1, c2, c3, c4 = st.columns(4)
+    c1, c2, c3, c4, c5 = st.columns(5)
 
     with c1:
         st.markdown("""
@@ -179,6 +181,14 @@ def show():
         <div class="stat-card">
             <div class="stat-number">AI+ML</div>
             <div class="stat-label">Prediction Engine</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with c5:
+        st.markdown("""
+        <div class="stat-card">
+            <div class="stat-number">PDF/Excel</div>
+            <div class="stat-label">Format Export</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -222,6 +232,9 @@ def show():
     ✅ Menyediakan simulasi berbagai skenario perubahan lingkungan
 
     ✅ Menghasilkan insight otomatis berbasis Artificial Intelligence
+               
+    ✅ Menyediakan laporan otomatis dalam berbagai format
+
     """)
 
     st.divider()
@@ -230,49 +243,71 @@ def show():
     # FITUR
     # ==================================================
 
-    st.markdown("## ✨ Fitur Utama Sistem")
+    st.markdown("## 🧩 Fitur Utama Sistem")
 
     col1, col2 = st.columns(2)
 
     with col1:
 
         st.info("""
-        🏠 Dashboard Nasional
+    ### 🏠 Dashboard Nasional
 
-        Menampilkan statistik nasional, insight AI, dan ringkasan kondisi DBD Indonesia.
-        """)
-
-        st.info("""
-        🔮 Prediksi Kasus DBD
-
-        Menghasilkan prediksi jumlah kasus DBD pada tingkat provinsi menggunakan Machine Learning.
-        """)
+    Menampilkan kondisi nasional DBD Indonesia,
+    ringkasan statistik, insight AI, serta wilayah risiko tinggi.
+    """)
 
         st.info("""
-        📈 Analisis Tren DBD
+    ### 🔮 Prediksi Kasus
 
-        Visualisasi interaktif perkembangan kasus DBD dari waktu ke waktu.
-        """)
+    Memprediksi jumlah kasus DBD masa depan
+    menggunakan model Machine Learning terbaik.
+    """)
+
+        st.info("""
+    ### 📈 Tren DBD
+
+    Membandingkan tren perkembangan kasus
+    antar provinsi secara interaktif.
+    """)
+
+        st.info("""
+    ### 🔬 Analisis Faktor Eksternal
+
+    Menjelaskan faktor-faktor yang paling 
+    memengaruhi perubahan jumlah kasus.
+
+    """)
+
 
     with col2:
 
         st.info("""
-        🔬 Analisis Faktor Eksternal
+    ### 📍 Analisis Provinsi
 
-        Menjelaskan faktor-faktor yang paling memengaruhi perubahan jumlah kasus.
-        """)
-
-        st.info("""
-        ⚙️ Simulasi Variabel
-
-        What-if analysis terhadap curah hujan, suhu, mobilitas, sanitasi, dan lainnya.
-        """)
+    Menyajikan profil lengkap setiap provinsi,
+    tren kasus, dan tingkat risiko DBD.
+    """)
 
         st.info("""
-        🤖 AI Insight Generator
+    ### ⚙️ Simulasi Variabel
 
-        Interpretasi otomatis menggunakan Google Gemini AI.
-        """)
+    Melakukan what-if analysis terhadap
+    faktor lingkungan dan sosial.
+    """)
+
+        st.info("""
+    ### 🔬 Faktor Eksternal
+
+    Mengidentifikasi faktor paling berpengaruh
+    terhadap perubahan jumlah kasus DBD.
+    """)
+
+        st.info("""
+    ### 🤖 AI Insight Generator
+
+    Interpretasi otomatis menggunakan Google 
+    Gemini AI.
+    """)
 
     st.divider()
 
@@ -282,42 +317,88 @@ def show():
 
     st.markdown("## 🗂️ Sumber Dataset")
 
-    st.markdown("""
+    c1, c2 = st.columns(2)
+
+    with c1:
+
+        st.info("""
     ### 🦟 Data Kasus DBD
 
-    - Kasus Penyakit Menurut Provinsi dan Jenis Penyakit (BPS)
-    - Kasus DBD 2020–2022 (Kementerian Kesehatan RI)
-    - Kasus DBD Provinsi Tahun 2023 (BPS)
-    - Kasus DBD Jakarta Tahun 2023 (Satu Data Indonesia)
+    Data historis kasus DBD seluruh provinsi
+    Indonesia periode 2020–2025.
+
+    Digunakan sebagai target prediksi sistem.
+                
+    Dataset dikumpulkan dari berbagai sumber resmi untuk memperoleh cakupan nasional yang lebih lengkap.
+
+    Sumber data:
+
+    • Badan Pusat Statistik (BPS) – Kasus Penyakit Menurut Provinsi dan Jenis Penyakit
+
+    • Kementerian Kesehatan Republik Indonesia (Kemenkes) – Data Kasus DBD Tahun 2020–2022
+
+    • Badan Pusat Statistik (BPS) – Data Kasus DBD Provinsi Tahun 2023
+
+    • Satu Data Indonesia – Data Kasus DBD Provinsi DKI Jakarta Tahun 2023
+
+    """)
+        
+        st.info("""
+    ### 🚰 Data Infrastruktur
+
+    - Sanitasi layak
+    - Akses air bersih
+    - Mobilitas penduduk
+
+    Digunakan sebagai faktor eksternal prediksi.
+    
+    Sumber data:
+    
+    • Persentase Rumah Tangga yang Memiliki Akses Sanitasi Layak Menurut Provinsi Tahun 2020–2025 – BPS
+
+    • Persentase Rumah Tangga yang Memiliki Akses Sumber Air Minum Layak Menurut Provinsi Tahun 2020–2025 – BPS
+
+    • Badan Pusat Statistik (BPS) – Data Mobilitas Penduduk Tahun 2020–2024
+
     """)
 
-    st.markdown("""
-    ### 🚗 Data Mobilitas Masyarakat
+    with c2:
 
-    - Mobilitas Penduduk 2020–2024 (BPS)
-    - Forecasted Mobility Data 2025
+        st.info("""
+    ### 👥 Data Kependudukan
+
+    Data kepadatan penduduk digunakan untuk menggambarkan tingkat konsentrasi populasi yang dapat memengaruhi kecepatan penyebaran penyakit.
+
+    Sumber data:
+
+    • Badan Pusat Statistik (BPS) – Data Kepadatan Penduduk Tahun 2020–2025
+    
     """)
 
-    st.markdown("""
-    ### 🌦️ Data Cuaca dan Iklim
+        st.info("""
+    ### 🌧️ Data Iklim
 
-    - Climate Data Daily IDN (Kaggle)
-    - Semarang Daily Climate Data (Kaggle)
-    - Pontianak Weather Daily (BMKG)
-    - NASA POWER Surface Meteorology
-    """)
+    Data iklim digunakan untuk menganalisis pengaruh kondisi lingkungan terhadap perkembangan populasi nyamuk Aedes aegypti sebagai vektor utama DBD.
 
-    st.markdown("""
-    ### 🚿 Data Sanitasi & Air Layak
+    Variabel yang digunakan meliputi:
 
-    - Sanitasi Layak 2020–2025 (BPS)
-    - Air Minum Layak 2020–2025 (BPS)
-    """)
+    • Curah hujan
 
-    st.markdown("""
-    ### 👥 Data Kepadatan Penduduk
+    • Suhu udara
 
-    - Kepadatan Penduduk Indonesia 2020–2025 (BPS)
+    • Kelembapan udara
+
+    Sumber data:
+
+    • Climate Data Daily Indonesia – Kaggle
+
+    • Semarang Daily Climate Data 2020–2023 – Kaggle
+
+    • Pontianak Weather Daily 2021–2024 – BMKG
+
+    • NASA POWER Monthly Surface Meteorology 2020–2025 – NASA
+
+
     """)
 
     st.divider()
@@ -345,35 +426,159 @@ def show():
     st.divider()
 
     # ==================================================
-    # ARSITEKTUR
+    # CARA KERJA SISTEM
     # ==================================================
 
     st.markdown("## ⚙️ Cara Kerja Sistem")
 
-    st.markdown("""
-    1️⃣ **Data Collection**
+    st.caption(
+        "Alur kerja sistem mulai dari pengumpulan data hingga pembuatan laporan analitik."
+    )
 
-    Pengumpulan data DBD, cuaca, mobilitas, sanitasi, dan kependudukan.
+    col1, col2 = st.columns(2)
 
-    2️⃣ **Data Integration & Cleaning**
+    with col1:
 
-    Seluruh dataset digabungkan dan dibersihkan.
+        st.info("""
+    ### 1️⃣ Akuisisi Data
 
-    3️⃣ **Feature Engineering**
+    📥 Mengumpulkan data dari:
 
-    Pembentukan variabel yang digunakan model.
+    • BPS
 
-    4️⃣ **Machine Learning Prediction**
+    • Kemenkes
 
-    Prediksi jumlah kasus menggunakan Random Forest dan XGBoost.
+    • BMKG
 
-    5️⃣ **AI Insight Generation**
+    • NASA POWER
 
-    Google Gemini menghasilkan interpretasi otomatis.
+    • Kaggle
 
-    6️⃣ **Interactive Dashboard**
+    • Satu Data Indonesia
+    """)
 
-    Hasil disajikan dalam dashboard yang mudah dipahami.
+        st.info("""
+    ### 2️⃣ Integrasi Data
+
+    🔄 Seluruh dataset digabungkan menjadi satu dataset nasional.
+
+    Proses:
+
+    • Cleaning
+
+    • Validasi
+
+    • Normalisasi
+
+    • Sinkronisasi waktu
+    """)
+
+        st.info("""
+    ### 3️⃣ Feature Engineering
+
+    🧩 Membentuk fitur analitik:
+
+    • Lag 1 Tahun
+
+    • Lag 2 Tahun
+
+    • Lag 3 Tahun
+
+    • Rolling Mean
+
+    • Growth Rate
+
+    • Faktor Eksternal
+    """)
+
+        st.info("""
+    ### 4️⃣ Penyimpanan Database
+
+    ☁️ Dataset tersimpan pada Supabase.
+
+    Digunakan untuk:
+
+    • Dashboard
+
+    • Prediksi
+
+    • Analisis
+
+    • Export
+    """)
+
+    with col2:
+
+        st.info("""
+    ### 5️⃣ Machine Learning
+
+    🤖 Model yang digunakan:
+
+    • Random Forest
+
+    • XGBoost
+
+    • Ensemble Model
+
+    Digunakan untuk memprediksi kasus DBD.
+    """)
+
+        st.info("""
+    ### 6️⃣ Explainable AI
+
+    🔬 Analisis faktor dominan:
+
+    • Feature Importance
+
+    • Ranking Faktor
+
+    • Analisis Risiko
+
+    • Interpretasi Faktor
+    """)
+
+        st.info("""
+    ### 7️⃣ AI Insight Generator
+
+    🧠 Google Gemini AI menghasilkan:
+
+    • Insight Nasional
+
+    • Insight Provinsi
+
+    • Insight Simulasi
+
+    • Rekomendasi Kebijakan
+    """)
+
+        st.info("""
+    ### 8️⃣ Dashboard & Export
+
+    📊 Hasil ditampilkan dalam dashboard interaktif.
+
+    📄 PDF
+
+    📈 Excel
+
+    📋 CSV
+    """)
+
+    st.success("""
+    ### 🎯 Hasil Akhir Sistem
+
+    Seluruh proses menghasilkan platform analitik DBD berbasis Artificial Intelligence dan Machine Learning yang mampu membantu pengguna:
+
+    ✅ Memahami kondisi DBD nasional dan provinsi
+
+    ✅ Mengidentifikasi faktor penyebab peningkatan kasus
+
+    ✅ Melakukan simulasi kebijakan
+
+    ✅ Membandingkan tren antar wilayah
+
+    ✅ Memprediksi kasus pada periode mendatang
+
+    ✅ Menghasilkan laporan profesional secara otomatis
     """)
 
     st.divider()
@@ -423,33 +628,123 @@ def show():
     st.divider()
 
     # ==================================================
+    # INOVASI SISTEM
+    # ==================================================
+
+    st.markdown("## 🚀 Inovasi Sistem")
+
+    st.markdown("""
+    Sistem Prediksi Kasus DBD Indonesia mengintegrasikan berbagai pendekatan
+    analitik modern ke dalam satu platform yang terintegrasi.
+
+    ### Inovasi yang diterapkan:
+
+    - 📊 Dashboard visual interaktif
+    - 🤖 Prediksi berbasis Machine Learning
+    - 🔬 Explainable AI melalui Feature Importance
+    - 🧠 AI Narrative menggunakan Gemini AI
+    - ⚙️ What-if Analysis melalui Simulasi Variabel
+    - ☁️ Integrasi Database Supabase
+    - 📥 Export Laporan PDF, Excel, dan CSV
+    - 🎯 Pendukung pengambilan keputusan berbasis data
+
+    Dengan pendekatan tersebut, sistem tidak hanya menampilkan data,
+    tetapi juga membantu pengguna memahami faktor penyebab,
+    menganalisis risiko, dan merancang strategi mitigasi DBD secara lebih efektif.
+    """)
+
+    st.divider()
+
+    # ==================================================
     # MANFAAT
     # ==================================================
 
     st.markdown("## 🎯 Manfaat Sistem")
 
-    col1, col2, col3 = st.columns(3)
+    col1, col2 = st.columns(2)
 
     with col1:
-        st.success("""
-        🏛️ Pemerintah
 
-        Mendukung monitoring dan perencanaan program pencegahan DBD.
-        """)
+        st.success("""
+    ### 🏛️ Untuk Pemerintah
+
+    ✅ Perencanaan intervensi
+
+    ✅ Prioritas wilayah risiko tinggi
+
+    ✅ Early Warning System
+
+    ✅ Pendukung kebijakan kesehatan
+    """)
+
+        st.success("""
+    ### 🏥 Untuk Dinas Kesehatan
+
+    ✅ Monitoring kasus DBD
+
+    ✅ Analisis risiko wilayah
+
+    ✅ Evaluasi program pengendalian
+
+    ✅ Penyusunan strategi mitigasi
+    """)
 
     with col2:
+
         st.success("""
-        🔬 Peneliti
+    ### 🔬 Untuk Peneliti
 
-        Membantu eksplorasi dan analisis faktor risiko DBD.
-        """)
+    ✅ Analisis faktor penyebab
 
-    with col3:
+    ✅ Evaluasi pengaruh variabel
+
+    ✅ Pengembangan model prediksi
+
+    ✅ Penelitian epidemiologi
+    """)
+
         st.success("""
-        👨‍👩‍👧‍👦 Masyarakat
+    ### 👨‍👩‍👧‍👦 Untuk Masyarakat
 
-        Meningkatkan kesadaran terhadap faktor penyebab DBD.
-        """)
+    ✅ Edukasi kesehatan
+
+    ✅ Peningkatan kewaspadaan dini
+
+    ✅ Pemahaman faktor risiko
+
+    ✅ Kesadaran pencegahan DBD
+    """)
+
+    st.divider()
+    # ==================================================
+    # SISTEM EXPORT
+    # ==================================================
+
+    st.markdown("## 📥 Sistem Export Laporan")
+
+    st.success("""
+    Sistem mendukung pembuatan laporan otomatis dalam berbagai format:
+
+    ✅ PDF Report
+
+    ✅ Microsoft Excel (.xlsx)
+
+    ✅ CSV Dataset
+
+    Laporan dapat dihasilkan dari:
+
+    • Dashboard Nasional
+
+    • Analisis Provinsi
+
+    • Prediksi Kasus
+
+    • Tren DBD
+
+    • Simulasi Variabel
+
+    • Faktor Eksternal
+    """)
 
     st.divider()
 
