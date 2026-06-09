@@ -13,7 +13,7 @@ CAPITAL_MAP = {
     "Jawa Barat": "Bandung",
     "Jawa Tengah": "Semarang",
     "DI Yogyakarta": "Yogyakarta",
-    "Jawa Timur": "Surabaya",
+    "Daerah Istimewa Yogyakarta": "Yogyakarta",    "Jawa Timur": "Surabaya",
     "Banten": "Serang",
     "Bali": "Denpasar",
     "Nusa Tenggara Barat": "Mataram",

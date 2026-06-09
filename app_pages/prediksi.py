@@ -63,7 +63,7 @@ def show(df_merge):
               f"Tahun {ins['tahun_acuan']}")
     cb.metric("Prediksi Kasus", f"{ins['prediksi']:,}",
               f"{ins['persen']:+.1f}%")
-    cc.metric("Model", ins["model"])
+    cc.metric("Model yang Digunakan", ins["model"])
 
     st.divider()
 
@@ -85,7 +85,7 @@ def show(df_merge):
     with col_risk:
         st.markdown(
             f"""<div class="metric-card">
-                <div class="label">Risk Indicator</div>
+                <div class="label">Indikator Risiko</div>
                 <div class="value" style="color:{risk_color}">{risk_emoji} {risk_level}</div>
                 <div class="sub">{risk_desc}</div>
             </div>""",
@@ -94,7 +94,7 @@ def show(df_merge):
     with col_outbreak:
         st.markdown(
             f"""<div class="metric-card">
-                <div class="label">Outbreak Probability</div>
+                <div class="label">Probabilitas Outbreak</div>
                 <div class="value" style="color:{risk_color}">{outbreak_prob}%</div>
                 <div class="sub">estimasi probabilitas peningkatan kasus</div>
             </div>""",
@@ -137,7 +137,7 @@ def show(df_merge):
     st.divider()
 
 # ── 5. Recommended Actions ────────────────────────────────────────────────
-    st.subheader("📋 Recommended Actions")
+    st.subheader("📋 Tindakan yang Direkomendasikan")
 
     # Ambil data konteks provinsi
     df_prov     = df_merge[df_merge["provinsi"] == prov_pred].sort_values("tahun")
@@ -327,7 +327,7 @@ PENTING:
         margin-bottom:10px;
         color:white;
         ">
-        📥 Export Laporan Prediksi
+        📥 Unduh Laporan Prediksi
         </h2>
 
         <p style="

@@ -17,7 +17,7 @@ def show(df_merge):
     st.title("🦟 Sistem Prediksi Kasus DBD Indonesia")
 
     st.markdown(
-        "### 🗺️ Peta Risiko DBD Indonesia 2026"
+        "### 🗺️ Peta Prediksi Risiko DBD Indonesia di Tahun 2026"
     )
 
     map_obj, risk_df = show_risk_map(
@@ -31,7 +31,7 @@ def show(df_merge):
         height=650
     )
     st.info("""
-    💡 **Interpretasi Peta Risiko**
+    💡 **Interpretasi Peta Prediksi Risiko**
 
     Peta ini menampilkan tingkat risiko DBD setiap provinsi berdasarkan hasil analisis dan prediksi sistem untuk tahun 2026.
 
@@ -84,6 +84,151 @@ def show(df_merge):
     Wilayah memiliki potensi kejadian luar biasa (KLB) dan memerlukan tindakan segera.
     """
         )
+
+    st.divider()
+
+    st.markdown(
+        """
+        ### 📊 Prediksi Kasus DBD Seluruh Provinsi Tahun 2026
+        """
+    )
+
+    st.caption(
+        "Tabel berikut menampilkan hasil prediksi kasus DBD tahun 2026 untuk seluruh provinsi di Indonesia beserta tingkat risikonya."
+    )
+
+    st.caption(
+        "Tabel diurutkan berdasarkan prediksi kasus 2026 dari yang terbanyak dan tingkat risiko berbahaya."
+    )
+
+    # ==================================================
+    # TABEL PREDIKSI NASIONAL 2026
+    # ==================================================
+
+    risk_table = risk_df.copy()
+
+    # Sesuaikan dengan struktur risk_df dari project kamu
+    risk_table = risk_table.rename(
+        columns={
+            "provinsi": "Provinsi",
+            "prediksi_2026": "Prediksi Kasus 2026",
+            "risiko": "Tingkat Risiko"
+        }
+    )
+
+    # Status
+    status_map = {
+        "Aman": "Terkendali",
+        "Waspada": "Perlu Kewaspadaan",
+        "Tinggi": "Perlu Pemantauan",
+        "Bahaya": "Prioritas Tinggi"
+    }
+
+    risk_table["Status"] = (
+        risk_table["Tingkat Risiko"]
+        .map(status_map)
+    )
+
+    # Ranking nasional
+    risk_table = (
+        risk_table
+        .sort_values(
+            "Prediksi Kasus 2026",
+            ascending=False
+        )
+        .reset_index(drop=True)
+    )
+
+    risk_table.insert(
+        0,
+        "Ranking",
+        range(1, len(risk_table) + 1)
+    )
+
+    # Emoji risiko
+    emoji_map = {
+        "Aman": "🟢 Aman",
+        "Waspada": "🟡 Waspada",
+        "Tinggi": "🟠 Tinggi",
+        "Bahaya": "🔴 Bahaya"
+    }
+
+    risk_table["Tingkat Risiko"] = (
+        risk_table["Tingkat Risiko"]
+        .map(emoji_map)
+    )
+
+    # ==================================================
+    # RINGKASAN NASIONAL
+    # ==================================================
+
+    c1, c2, c3 = st.columns(3)
+
+    with c1:
+        st.metric(
+            "Total Prediksi Nasional 2026",
+            f"{int(risk_df['prediksi_2026'].sum()):,}"
+        )
+
+    with c2:
+        st.metric(
+            "Provinsi Risiko Bahaya",
+            int((risk_df["risiko"] == "Bahaya").sum())
+        )
+
+    with c3:
+        st.metric(
+            "Provinsi Risiko Tinggi",
+            int((risk_df["risiko"] == "Tinggi").sum())
+        )
+
+    # ==================================================
+    # FILTER RISIKO
+    # ==================================================
+
+    opsi_risiko = st.selectbox(
+        "🔍 Filter Tingkat Risiko",
+        [
+            "Semua",
+            "🟢 Aman",
+            "🟡 Waspada",
+            "🟠 Tinggi",
+            "🔴 Bahaya"
+        ]
+    )
+
+    filtered_table = risk_table.copy()
+
+    if opsi_risiko != "Semua":
+        filtered_table = filtered_table[
+            filtered_table["Tingkat Risiko"] == opsi_risiko
+        ]
+
+    # Format angka setelah proses sorting selesai
+    filtered_table["Prediksi Kasus 2026"] = (
+        filtered_table["Prediksi Kasus 2026"]
+        .astype(int)
+        .map(lambda x: f"{x:,}")
+    )
+
+    # ==================================================
+    # TAMPILKAN TABEL
+    # ==================================================
+
+    st.dataframe(
+        filtered_table[
+            [
+                "Ranking",
+                "Provinsi",
+                "Prediksi Kasus 2026",
+                "Tingkat Risiko",
+                "Status"
+            ]
+        ],
+        use_container_width=True,
+        hide_index=True
+    )
+
     selected_province = st.selectbox(
         "📍 Pilih provinsi untuk dianalisis lebih lanjut",
         sorted(risk_df["provinsi"].unique())
@@ -104,7 +249,7 @@ def show(df_merge):
         st.rerun()
 
     st.markdown(
-        "Ringkasan statistik nasional berdasarkan data real-time dari Supabase."
+        "Ringkasan statistik nasional berdasarkan data real-time."
     )
     # ── Hitung statistik ─────────────────────────────────────────────────────
     total_kasus  = int(df_merge["jumlah_kasus_bulat"].sum())
@@ -135,7 +280,7 @@ def show(df_merge):
     st.divider()
 
 # ── AI National Summary ──────────────────────────────────────────────────
-    st.subheader("🤖 AI National Summary")
+    st.subheader("🤖 AI Ringkasan Nasional")
 
     # Hitung provinsi naik/turun
     prov_naik, prov_turun = [], []
@@ -282,7 +427,7 @@ PENTING: jangan gunakan markdown seperti ** atau ##, tulis teks biasa saja."""
     margin-bottom:10px;
     color:white;
     ">
-    📥 Export Laporan Nasional
+    📥 Unduh Laporan Nasional
     </h2>
 
     <p style="
@@ -557,7 +702,7 @@ PENTING: jangan gunakan markdown seperti ** atau ##, tulis teks biasa saja."""
         plt.close()
 
     with col_r:
-        st.subheader("Top 10 Provinsi")
+        st.subheader("10 Provinsi Kasus Tertinggi")
         top10 = (
             df_merge.groupby("provinsi")["jumlah_kasus_bulat"]
             .sum().sort_values(ascending=False).head(10)
