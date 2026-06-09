@@ -7,7 +7,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from utils.charts import style_ax, ACCENT, GRID_COL, TEXT_COL, DARK_BG
 from utils.db import get_provinsi_list
-from utils.model import get_bundle
+from utils.model import (
+    get_bundle,
+    normalize_province_name
+)
 
 FITUR_LABEL = {
     "lag_t1"                         : "kasus tahun lalu",
@@ -40,19 +43,25 @@ REKOMENDASI_MAP = {
 
 
 def show(df_merge):
-    st.title("🔬 Analisis Faktor Eksternal")
+    st.title("🔬 Faktor yang Mempengaruhi Kasus DBD")
 
     prov_opts = get_provinsi_list(df_merge)
     col1, col2 = st.columns([2, 1])
     with col1:
         prov_fi = st.selectbox("Provinsi", prov_opts)
+        prov_fi_model = normalize_province_name(prov_fi)
         if st.session_state.get("last_faktor_prov") != prov_fi:
             st.session_state["last_faktor_prov"] = prov_fi
             st.session_state["show_faktor"] = False
     with col2:
-        top_n = st.slider("Top-N Fitur", 3, 15, 10)
+        top_n = st.slider(
+            "Jumlah faktor yang ditampilkan",
+            3,
+            15,
+            10
+        )
 
-    if st.button("📊 Tampilkan Analisis", type="primary"):
+    if st.button("📊 Lihat Hasil Analisis", type="primary"):
         st.session_state["show_faktor"] = True
 
     if not st.session_state.get("show_faktor", False):
@@ -63,21 +72,21 @@ def show(df_merge):
     best_model_map = get_bundle("best_model_map")
     fitur_cols     = get_bundle("fitur_cols", [])
 
-    mn   = best_model_map.get(prov_fi, "")
+    mn   = best_model_map.get(prov_fi_model, "")
     m_fi = None
     t_sfx = ""
 
-    if mn == "Random Forest" and prov_fi in rf_models:
-        m_fi, t_sfx = rf_models[prov_fi], "Random Forest"
-    elif mn == "XGBoost" and prov_fi in xgb_models:
-        m_fi, t_sfx = xgb_models[prov_fi], "XGBoost"
-    elif prov_fi in rf_models:
-        m_fi, t_sfx = rf_models[prov_fi], "Random Forest"
-    elif prov_fi in xgb_models:
-        m_fi, t_sfx = xgb_models[prov_fi], "XGBoost"
+    if mn == "Random Forest" and prov_fi_model in rf_models:
+        m_fi, t_sfx = rf_models[prov_fi_model], "Random Forest"
+    elif mn == "XGBoost" and prov_fi_model in xgb_models:
+        m_fi, t_sfx = xgb_models[prov_fi_model], "XGBoost"
+    elif prov_fi_model in rf_models:
+        m_fi, t_sfx = rf_models[prov_fi_model], "Random Forest"
+    elif prov_fi_model in xgb_models:
+        m_fi, t_sfx = xgb_models[prov_fi_model], "XGBoost"
 
     if m_fi is None:
-        st.warning("Feature importance tidak tersedia untuk provinsi ini.")
+        st.warning("Data faktor yang mempengaruhi kasus DBD belum tersedia untuk provinsi ini.")
         return
 
     imp   = m_fi.feature_importances_
@@ -87,24 +96,50 @@ def show(df_merge):
         .head(top_n)
     )
 
+    fi_df["Label"] = (
+        fi_df["Fitur"]
+        .map(lambda x: FITUR_LABEL.get(x, x))
+    )
+
     # ── Feature Importance Chart ──────────────────────────────────────────────
     fig, ax = plt.subplots(figsize=(10, 5))
     bar_c = [ACCENT if i == 0 else GRID_COL for i in range(len(fi_df))]
-    ax.barh(fi_df["Fitur"][::-1], fi_df["Score"][::-1], color=bar_c[::-1])
+    ax.barh(fi_df["Label"][::-1], fi_df["Score"][::-1], color=bar_c[::-1])
     ax.axvline(fi_df["Score"].mean(), color="#ff6b6b",
                linestyle="--", linewidth=1, label="Rata-rata")
-    style_ax(ax, fig, f"Feature Importance — {prov_fi} ({t_sfx})")
-    ax.set_xlabel("Importance Score")
+    style_ax(
+    ax,
+    fig,
+    f"Faktor yang Paling Berpengaruh terhadap Kasus DBD di {prov_fi}"
+    )
+    ax.set_xlabel("Tingkat Pengaruh")
     ax.legend(facecolor=DARK_BG, labelcolor=TEXT_COL)
     st.pyplot(fig)
     plt.close()
 
-    st.dataframe(fi_df.reset_index(drop=True), use_container_width=True)
+    fi_df_display = fi_df.copy()
+
+    fi_df_display["Fitur"] = (
+        fi_df_display["Fitur"]
+        .map(lambda x: FITUR_LABEL.get(x, x))
+    )
+
+    fi_df_display = fi_df_display.rename(
+        columns={
+            "Fitur": "Faktor",
+            "Score": "Tingkat Pengaruh"
+        }
+    )
+
+    st.dataframe(
+        fi_df_display.reset_index(drop=True),
+        use_container_width=True
+    )
 
     st.divider()
 
 # ── AI Narrative ──────────────────────────────────────────────────────────
-    st.subheader("🤖 AI Narrative")
+    st.subheader("🤖 AI Ringkasan Hasil Analisis")
 
     df_prov    = df_merge[df_merge["provinsi"] == prov_fi].sort_values("tahun")
     top3_fitur = fi_df.head(3)["Fitur"].tolist()
@@ -169,7 +204,7 @@ PENTING: jangan gunakan markdown seperti ** atau ##, tulis teks biasa saja."""
             return None, str(e)
 
     # Panggil AI
-    with st.spinner("🤖 AI sedang menganalisis faktor..."):
+    with st.spinner("🤖 AI sedang menganalisis faktor yang mempengaruhi kasus DBD..."):
         ai_narrative, ai_error = generate_ai_narrative(
             prov_fi, top3_label, top3_score,
             nilai_top3, kasus_last_prov,
@@ -211,7 +246,7 @@ PENTING: jangan gunakan markdown seperti ** atau ##, tulis teks biasa saja."""
 
     st.markdown(
         f"""<div class="insight-box">
-        <strong>📍 Analisis Faktor — {prov_fi}</strong><br><br>
+        <strong>📍 Ringkasan Faktor yang Mempengaruhi Kasus DBD — {prov_fi}</strong><br><br>
         {ai_narrative}
         </div>""",
         unsafe_allow_html=True,
@@ -221,21 +256,25 @@ PENTING: jangan gunakan markdown seperti ** atau ##, tulis teks biasa saja."""
 
     # ── Keterangan fitur ──────────────────────────────────────────────────────
     st.subheader("📋 Keterangan Fitur")
+
     st.markdown("""
-| Fitur | Keterangan |
-|---|---|
-| lag_t1, lag_t2, lag_t3 | Kasus DBD 1, 2, 3 tahun sebelumnya |
-| rolling_mean_2/3 | Rata-rata kasus 2 dan 3 tahun terakhir |
-| growth_rate | Persentase perubahan kasus antar tahun |
-| curah_hujan | Curah hujan rata-rata (mm) |
-| suhu | Suhu rata-rata (°C) |
-| kelembaban | Kelembaban udara rata-rata (%) |
-| persentase_mobilitas | Tingkat mobilitas penduduk |
-| persentase_akses_sanitasi_layak | Akses sanitasi layak (%) |
-| persentase_akses_air_layak | Akses air bersih layak (%) |
-| jumlah_penduduk | Jumlah penduduk provinsi |
-""")
-    
+    | Faktor | Penjelasan |
+    |---|---|
+    | Kasus DBD tahun lalu | Jumlah kasus DBD pada tahun sebelumnya |
+    | Kasus DBD 2 tahun lalu | Jumlah kasus DBD dua tahun sebelumnya |
+    | Kasus DBD 3 tahun lalu | Jumlah kasus DBD tiga tahun sebelumnya |
+    | Rata-rata kasus 2 tahun terakhir | Gambaran tren kasus dalam dua tahun terakhir |
+    | Rata-rata kasus 3 tahun terakhir | Gambaran tren kasus dalam tiga tahun terakhir |
+    | Perubahan jumlah kasus | Kenaikan atau penurunan kasus dibanding tahun sebelumnya |
+    | Curah hujan | Curah hujan rata-rata di wilayah tersebut |
+    | Suhu udara | Suhu udara rata-rata |
+    | Kelembaban udara | Tingkat kelembaban udara |
+    | Mobilitas penduduk | Tingkat aktivitas dan perpindahan masyarakat |
+    | Akses sanitasi layak | Persentase masyarakat yang memiliki sanitasi yang baik |
+    | Akses air bersih | Persentase masyarakat yang memiliki akses air bersih |
+    | Jumlah penduduk | Total penduduk di provinsi tersebut |
+    """)
+
     # =====================================================
     # EXPORT LAPORAN FAKTOR EKSTERNAL
     # =====================================================
@@ -258,7 +297,7 @@ PENTING: jangan gunakan markdown seperti ** atau ##, tulis teks biasa saja."""
     box-shadow:0 0 25px rgba(6,182,212,.25);
     ">
     <h2 style="color:white;margin-bottom:10px;">
-    📥 Export Laporan Faktor Eksternal
+    📥 Unduh Laporan Faktor Penyebab DBD
     </h2>
 
     <p style="color:#e2e8f0;">
@@ -359,38 +398,48 @@ PENTING: jangan gunakan markdown seperti ** atau ##, tulis teks biasa saja."""
 
                 for _, row in fi_df.iterrows():
 
+                    nama_faktor = FITUR_LABEL.get(
+                        row["Fitur"],
+                        row["Fitur"]
+                    )
+
                     ranking_html += f"""
                     <tr>
-                        <td>{row['Fitur']}</td>
+                        <td>{nama_faktor.title()}</td>
                         <td>{row['Score']:.4f}</td>
                     </tr>
                     """
 
                 fitur_desc_html = """
-                <tr><td>lag_t1, lag_t2, lag_t3</td><td>Kasus DBD 1,2,3 tahun sebelumnya</td></tr>
-                <tr><td>rolling_mean_2/3</td><td>Rata-rata kasus 2 dan 3 tahun terakhir</td></tr>
-                <tr><td>growth_rate</td><td>Persentase perubahan kasus antar tahun</td></tr>
-                <tr><td>curah_hujan</td><td>Curah hujan rata-rata (mm)</td></tr>
-                <tr><td>suhu</td><td>Suhu rata-rata (°C)</td></tr>
-                <tr><td>kelembaban</td><td>Kelembaban udara rata-rata (%)</td></tr>
-                <tr><td>persentase_mobilitas</td><td>Tingkat mobilitas penduduk</td></tr>
-                <tr><td>persentase_akses_sanitasi_layak</td><td>Akses sanitasi layak (%)</td></tr>
-                <tr><td>persentase_akses_air_layak</td><td>Akses air bersih layak (%)</td></tr>
-                <tr><td>jumlah_penduduk</td><td>Jumlah penduduk provinsi</td></tr>
+                <tr><td>Kasus tahun lalu</td><td>Jumlah kasus DBD pada tahun sebelumnya</td></tr>
+                <tr><td>Kasus 2 tahun lalu</td><td>Jumlah kasus DBD dua tahun sebelumnya</td></tr>
+                <tr><td>Kasus 3 tahun lalu</td><td>Jumlah kasus DBD tiga tahun sebelumnya</td></tr>
+                <tr><td>Rata-rata 2 tahun terakhir</td><td>Gambaran tren kasus dalam dua tahun terakhir</td></tr>
+                <tr><td>Rata-rata 3 tahun terakhir</td><td>Gambaran tren kasus dalam tiga tahun terakhir</td></tr>
+                <tr><td>Perubahan jumlah kasus</td><td>Kenaikan atau penurunan kasus dibanding tahun sebelumnya</td></tr>
+                <tr><td>Curah hujan</td><td>Curah hujan rata-rata di wilayah tersebut</td></tr>
+                <tr><td>Suhu udara</td><td>Suhu udara rata-rata</td></tr>
+                <tr><td>Kelembaban udara</td><td>Tingkat kelembaban udara</td></tr>
+                <tr><td>Mobilitas penduduk</td><td>Tingkat aktivitas dan perpindahan masyarakat</td></tr>
+                <tr><td>Akses sanitasi layak</td><td>Persentase masyarakat yang memiliki sanitasi yang baik</td></tr>
+                <tr><td>Akses air bersih</td><td>Persentase masyarakat yang memiliki akses air bersih</td></tr>
+                <tr><td>Jumlah penduduk</td><td>Total penduduk di provinsi tersebut</td></tr>
                 """
 
                 html = f"""
 
                 <div class="section">
 
-                <h3>🔬 Ringkasan Analisis</h3>
+                <h3>🔬 Ringkasan Hasil Analisis</h3>
 
                 <div class="card">
 
                 <p><b>Provinsi:</b> {prov_fi}</p>
-                <p><b>Model:</b> {t_sfx}</p>
-                <p><b>Top Feature:</b> {fi_df.iloc[0]['Fitur']}</p>
-                <p><b>Importance:</b> {fi_df.iloc[0]['Score']:.4f}</p>
+                <p><b>Metode Analisis:</b> {t_sfx}</p>
+                <p><b>Faktor yang Paling Berpengaruh:</b>
+                {FITUR_LABEL.get(fi_df.iloc[0]['Fitur'], fi_df.iloc[0]['Fitur']).title()}
+                </p>
+                <p><b>Tingkat Pengaruh:</b> {fi_df.iloc[0]['Score']:.4f}</p>
 
                 </div>
 
@@ -398,13 +447,13 @@ PENTING: jangan gunakan markdown seperti ** atau ##, tulis teks biasa saja."""
 
                 <div class="section">
 
-                <h3>📊 Ranking Feature Importance</h3>
+                <h3>📊 Peringkat Faktor yang Mempengaruhi Kasus DBD</h3>
 
                 <table>
 
                 <tr>
-                    <th>Fitur</th>
-                    <th>Score</th>
+                    <th>Faktor</th>
+                    <th>Tingkat Pengaruh</th>
                 </tr>
 
                 {ranking_html}
@@ -415,7 +464,7 @@ PENTING: jangan gunakan markdown seperti ** atau ##, tulis teks biasa saja."""
 
                 <div class="section">
 
-                <h3>🤖 AI Narrative</h3>
+                <h3>🤖 Ringkasan Analisis Otomatis</h3>
 
                 <div class="card">
 

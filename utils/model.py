@@ -6,6 +6,17 @@ import streamlit as st
 import pandas as pd
 import pickle
 
+def normalize_province_name(provinsi):
+    mapping = {
+        "DKI Jakarta": "Dki Jakarta",
+        "DI Yogyakarta": "Di Yogyakarta",
+        "Daerah Istimewa Yogyakarta": "Di Yogyakarta"
+    }
+
+    return mapping.get(
+        str(provinsi).strip(),
+        str(provinsi).strip()
+    )
 
 @st.cache_resource(show_spinner="Memuat model...")
 def load_model_bundle():
@@ -36,6 +47,7 @@ def get_province_series(df_merge, provinsi):
 
 
 def predict_province(df_merge, provinsi, tahun_prediksi):
+    provinsi = normalize_province_name(provinsi)
     from statsmodels.tsa.arima.model import ARIMA
 
     rf_models      = get_bundle("rf_models")
@@ -66,8 +78,6 @@ def predict_province(df_merge, provinsi, tahun_prediksi):
             if m is None:
                 return {"error": "Model ARIMA tidak tersedia."}
             p, d, q = m.order
-            if len(series) < max(p, 1) + d + 1:
-                return {"error": f"Data historis {provinsi} terlalu sedikit untuk ARIMA."}
             try:
                 fitted = ARIMA(series, order=(p, d, q)).fit()
                 pred   = max(0, fitted.forecast(steps=steps).iloc[-1])
@@ -149,6 +159,7 @@ def generate_insight(df_merge, provinsi, tahun_prediksi):
 
 
 def simulasi_prediksi(provinsi, **kwargs):
+    provinsi = normalize_province_name(provinsi)
     rf_models    = get_bundle("rf_models")
     xgb_models   = get_bundle("xgb_models")
     fitur_cols   = list(get_bundle("fitur_cols", []))

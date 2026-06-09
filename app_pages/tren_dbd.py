@@ -31,7 +31,7 @@ def show(df_merge):
             value=(int(min(thn_opts)), int(max(thn_opts))),
         )
 
-    chart_type = st.radio("Tipe Grafik", ["Line Chart", "Bar Chart"], horizontal=True)
+    chart_type = st.radio("Tipe Grafik", ["Grafik Garis", "Grafik Batang"], horizontal=True)
 
     df_f = df_merge[
         (df_merge["tahun"] >= thn_range[0]) &
@@ -51,7 +51,7 @@ def show(df_merge):
                 .groupby("tahun")["jumlah_kasus_bulat"].sum()
             )
             c = PALETTE[i % len(PALETTE)]
-            if chart_type == "Line Chart":
+            if chart_type == "Grafik Garis":
                 ax.plot(sub.index, sub.values, marker="o", linewidth=2,
                         label=prov, color=c)
             else:
@@ -61,7 +61,7 @@ def show(df_merge):
         ax.set_title(f"Tren DBD: {', '.join(sel_prov)}", color=TEXT_COL)
     else:
         sub = df_f.groupby("tahun")["jumlah_kasus_bulat"].sum()
-        if chart_type == "Line Chart":
+        if chart_type == "Grafik Garis":
             ax.fill_between(sub.index, sub.values, alpha=0.12, color=ACCENT)
             ax.plot(sub.index, sub.values, marker="o", linewidth=2.5, color=ACCENT)
         else:
@@ -77,10 +77,10 @@ def show(df_merge):
 
     # ── Province Profile ──────────────────────────────────────────────────────
     if not sel_prov:
-        st.info("💡 Pilih provinsi di atas untuk melihat Province Profile.")
+        st.info("💡 Pilih provinsi di atas untuk melihat Profil Provinsi.")
         return
 
-    st.subheader("📋 Province Profile")
+    st.subheader("📋 Profil Provinsi")
     st.markdown("Rata-rata faktor eksternal per provinsi berdasarkan rentang tahun dipilih.")
 
     profile_cols = {
@@ -179,7 +179,7 @@ def show(df_merge):
     margin-bottom:10px;
     color:white;
     ">
-    📥 Export Laporan Tren DBD
+    📥 Unduh Laporan Tren DBD
     </h2>
 
     <p style="

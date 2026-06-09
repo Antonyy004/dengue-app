@@ -7,7 +7,11 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from utils.charts import style_ax, ACCENT, TEXT_COL, DARK_BG
 from utils.db import get_provinsi_list
-from utils.model import get_bundle, simulasi_prediksi
+from utils.model import (
+    get_bundle,
+    simulasi_prediksi,
+    normalize_province_name
+)
 
 SIM_VARS = [
     ("curah_hujan",                     "🌧️ Curah Hujan (mm)",    0.0,  600.0, 200.0),
@@ -56,10 +60,11 @@ def show(df_merge):
     df_modeling  = get_bundle("df_modeling", pd.DataFrame())
 
     prov_sim = st.selectbox("Provinsi", prov_opts)
+    prov_sim_model = normalize_province_name(prov_sim)
 
     # Ambil nilai baseline
     X_base = None
-    kode   = prov_to_kode.get(prov_sim)
+    kode   = prov_to_kode.get(prov_sim_model)
     if kode is not None and not df_modeling.empty:
         df_p = df_modeling[df_modeling["provinsi_encoded"] == kode].sort_values("tahun")
         if len(df_p) > 0:
@@ -84,7 +89,7 @@ def show(df_merge):
     ):
 
         result = simulasi_prediksi(
-            prov_sim,
+            prov_sim_model,
             **sliders
         )
 
@@ -100,7 +105,7 @@ def show(df_merge):
     sliders = st.session_state["sim_sliders"]
 
     result = simulasi_prediksi(
-        prov_sim,
+        normalize_province_name(prov_sim),
         **sliders
     )
 
@@ -124,10 +129,10 @@ def show(df_merge):
     # ── Metric row ────────────────────────────────────────────────────────────
     st.divider()
     ca, cb, cc = st.columns(3)
-    ca.metric("Prediksi Baseline", f"{result['baseline']:,} kasus")
+    ca.metric("Prediksi Dasar", f"{result['baseline']:,} kasus")
     cb.metric("Prediksi Simulasi", f"{result['simulasi']:,} kasus",
               f"{result['persen']:+.1f}%")
-    cc.metric("Model", result["model"])
+    cc.metric("Model yang Digunakan", result["model"])
 
     st.divider()
 
@@ -144,14 +149,14 @@ def show(df_merge):
     col_chart, col_policy = st.columns(2)
 
     with col_chart:
-        st.markdown("**📊 Baseline vs Simulasi**")
+        st.markdown("**📊 Prediksi Dasar vs Simulasi**")
         fig, ax = plt.subplots(figsize=(5, 4))
         ax.bar(
-            ["Baseline", "Simulasi"],
+            ["Prediksi Dasar", "Simulasi"],
             [result["baseline"], result["simulasi"]],
             color=[ACCENT, "#ff6b6b" if s > 0 else "#00cc88"],
         )
-        style_ax(ax, fig, f"Baseline vs Simulasi — {prov_sim}")
+        style_ax(ax, fig, f"Prediksi Dasar vs Simulasi — {prov_sim}")
         ax.set_ylabel("Jumlah Kasus")
         for xi, v in enumerate([result["baseline"], result["simulasi"]]):
             ax.text(xi, v + v * 0.01, f"{v:,}", ha="center",
@@ -160,7 +165,7 @@ def show(df_merge):
         plt.close()
 
     with col_policy:
-        st.markdown("**📋 Policy Impact Analysis**")
+        st.markdown("**📋 Analysis Dampak Kebijakan**")
         policy_rows = []
         for key, label, mn, mx, fb in SIM_VARS:
             if key not in fitur_cols:
@@ -182,12 +187,12 @@ def show(df_merge):
             st.dataframe(pd.DataFrame(policy_rows), use_container_width=True,
                          hide_index=True)
         else:
-            st.info("Belum ada variabel yang diubah dari baseline.")
+            st.info("Belum ada variabel yang diubah dari Prediksi Dasar.")
 
     st.divider()
 
 # ── Policy Impact Narrative ───────────────────────────────────────────────
-    st.subheader("📝 Policy Impact Analysis")
+    st.subheader("📝 Analysis Dampak Kebijakan")
 
     perubahan_signifikan = []
     for key, label, mn, mx, fb in SIM_VARS:
@@ -204,11 +209,11 @@ def show(df_merge):
     perubahan_signifikan.sort(key=lambda x: abs(x[1]), reverse=True)
 
     if not perubahan_signifikan:
-        st.info("Ubah nilai variabel minimal 5% dari baseline "
-                "untuk melihat Policy Impact Analysis.")
+        st.info("Ubah nilai variabel minimal 5% dari Prediksi Dasar"
+                "untuk melihat Analysis Dampak Kebijakan.")
     elif s == 0:
         st.info("Tidak ada perubahan signifikan pada prediksi. "
-                "Coba ubah nilai variabel lebih jauh dari baseline.")
+                "Coba ubah nilai variabel lebih jauh dari Prediksi Dasar.")
     else:
         # Siapkan data untuk AI
         perubahan_str = ", ".join(
@@ -328,7 +333,7 @@ PENTING: jangan gunakan markdown seperti ** atau ##, tulis teks biasa saja."""
         box-shadow:0 0 25px rgba(6,182,212,.25);
         ">
         <h2 style="color:white;margin-bottom:10px;">
-        📥 Export Laporan Simulasi
+        📥 Unduh Laporan Simulasi
         </h2>
 
         <p style="color:#e2e8f0;">

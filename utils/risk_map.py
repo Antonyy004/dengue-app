@@ -62,8 +62,11 @@ def build_risk_dataframe(df_merge):
 
         province_mapping = {
             "Dki Jakarta": "DKI Jakarta",
-            "Di Yogyakarta": "DI Yogyakarta",
-            "Daerah Istimewa Yogyakarta": "DI Yogyakarta"
+
+            "Di Yogyakarta": "Daerah Istimewa Yogyakarta",
+            "DI Yogyakarta": "Daerah Istimewa Yogyakarta",
+
+            "Daerah Istimewa Yogyakarta": "Daerah Istimewa Yogyakarta"
         }
 
         provinsi = province_mapping.get(

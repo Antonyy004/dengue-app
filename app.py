@@ -80,9 +80,9 @@ with st.sidebar:
     st.markdown("**Indonesia · 2020–2025**")
 
     if has_data:
-        st.success("✅ Supabase terhubung")
+        st.success("✅ Dataset terhubung")
     else:
-        st.error("❌ Supabase tidak terhubung")
+        st.error("❌ Dataset tidak tersedia")
 
     if has_model:
         st.success("✅ Model dimuat")
@@ -114,7 +114,7 @@ with st.sidebar:
 
     st.divider()
 
-    if has_data and st.button("Refresh Data Supabase"):
+    if has_data and st.button("Refresh Data"):
         st.cache_data.clear()
         st.rerun()
 
@@ -126,8 +126,8 @@ with st.sidebar:
 
 # ── Error banners ─────────────────────────────────────────────────────────────
 if data_error:
-    st.error(f"❌ **Gagal memuat data dari Supabase**: {data_error}")
-    st.info("Pastikan kredensial Supabase sudah ada di `.streamlit/secrets.toml`.")
+    st.error(f"❌ **Gagal memuat data**: {data_error}")
+    st.info("Pastikan dataset sudah tersedia.")
 
 if model_error:
     st.warning(f"⚠️ **Model tidak dimuat**: {model_error}. "
