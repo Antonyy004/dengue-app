@@ -14,8 +14,11 @@ def show(df_merge):
 
     province_mapping = {
         "Dki Jakarta": "DKI Jakarta",
-        "Di Yogyakarta": "DI Yogyakarta",
-        "Daerah Istimewa Yogyakarta": "DI Yogyakarta"
+
+        "Di Yogyakarta": "Daerah Istimewa Yogyakarta",
+        "DI Yogyakarta": "Daerah Istimewa Yogyakarta",
+
+        "Daerah Istimewa Yogyakarta": "Daerah Istimewa Yogyakarta"
     }
 
     df_merge = df_merge.copy()
@@ -101,7 +104,7 @@ def show(df_merge):
         risk = "🔴 Bahaya"
 
     st.metric(
-        "Tingkat Risiko DBD 2026",
+        "Tingkat Prediksi Risiko DBD Tahun 2026",
         risk
     )
 
@@ -307,7 +310,7 @@ def show(df_merge):
     margin-bottom:10px;
     color:white;
     ">
-    📥 Export Laporan Analisis Provinsi
+    📥 Unduh Laporan Analisis Provinsi
     </h2>
 
     <p style="
