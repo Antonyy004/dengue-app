@@ -12,3 +12,5 @@ google-generativeai
 folium
 streamlit-folium
 supabase
+pmdarima
+python-dotenv
