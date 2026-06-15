@@ -14,11 +14,13 @@ from utils.export_utils import (
 )
 
 def show(df_merge):
-    st.title("🦟 Sistem Prediksi Kasus DBD Indonesia")
+    st.title("Sistem Prediksi Kasus DBD Indonesia")
+    st.caption("Pemantauan dan prediksi kasus Demam Berdarah Dengue di seluruh provinsi Indonesia berbasis machine learning.")
 
-    st.markdown(
-        "### 🗺️ Peta Prediksi Risiko DBD Indonesia di Tahun 2026"
-    )
+    st.markdown("""
+    <div class="section-header"><div class="icon-badge">🗺️</div> Peta Prediksi Risiko DBD Indonesia 2026</div>
+    <p class="section-sub">Visualisasi tingkat risiko DBD setiap provinsi berdasarkan hasil analisis dan prediksi sistem.</p>
+    """, unsafe_allow_html=True)
 
     map_obj, risk_df = show_risk_map(
         df_merge,
@@ -37,69 +39,37 @@ def show(df_merge):
 
     Warna provinsi menunjukkan tingkat risiko relatif yang dapat digunakan sebagai dasar pemantauan, perencanaan intervensi, dan pengambilan keputusan dalam pengendalian DBD di Indonesia.
     """)
-    st.markdown("### 📖 Keterangan Tingkat Risiko")
+    
+    st.markdown("""
+        <div class="section-header"><div class="icon-badge">📖</div> Keterangan Tingkat Risiko</div>
+        """, unsafe_allow_html=True)
 
-    col1, col2, col3, col4 = st.columns(4)
+    risk_legend = [
+            ("risk-safe",   "🟢", "AMAN",
+            "Risiko DBD rendah. Wilayah relatif terkendali dan tidak menunjukkan potensi peningkatan kasus yang signifikan."),
+            ("risk-watch",  "🟡", "WASPADA",
+            "Risiko DBD sedang. Perlu peningkatan kewaspadaan karena terdapat potensi kenaikan kasus."),
+            ("risk-high",   "🟠", "TINGGI",
+            "Risiko DBD tinggi. Diperlukan pemantauan intensif dan upaya pencegahan yang lebih aktif."),
+            ("risk-danger", "🔴", "BAHAYA",
+            "Risiko DBD sangat tinggi. Wilayah memiliki potensi kejadian luar biasa (KLB) dan memerlukan tindakan segera."),
+    ]
 
-    with col1:
-        st.success(
-            """
-    🟢 **AMAN**
-
-    Risiko DBD rendah.
-
-    Wilayah relatif terkendali dan tidak menunjukkan potensi peningkatan kasus yang signifikan.
-    """
-        )
-
-    with col2:
-        st.warning(
-            """
-    🟡 **WASPADA**
-
-    Risiko DBD sedang.
-
-    Perlu peningkatan kewaspadaan karena terdapat potensi kenaikan kasus.
-    """
-        )
-
-    with col3:
-        st.warning(
-            """
-    🟠 **TINGGI**
-
-    Risiko DBD tinggi.
-
-    Diperlukan pemantauan intensif dan upaya pencegahan yang lebih aktif.
-    """
-        )
-
-    with col4:
-        st.error(
-            """
-    🔴 **BAHAYA**
-
-    Risiko DBD sangat tinggi.
-
-    Wilayah memiliki potensi kejadian luar biasa (KLB) dan memerlukan tindakan segera.
-    """
-        )
+    legend_cols = st.columns(4)
+    for col, (css_class, emoji, label, desc) in zip(legend_cols, risk_legend):
+            col.markdown(f"""
+            <div class="risk-card {css_class}">
+                <div class="risk-title">{emoji} {label}</div>
+                <div class="risk-desc">{desc}</div>
+            </div>
+            """, unsafe_allow_html=True)
 
     st.divider()
 
-    st.markdown(
-        """
-        ### 📊 Prediksi Kasus DBD Seluruh Provinsi Tahun 2026
-        """
-    )
-
-    st.caption(
-        "Tabel berikut menampilkan hasil prediksi kasus DBD tahun 2026 untuk seluruh provinsi di Indonesia beserta tingkat risikonya."
-    )
-
-    st.caption(
-        "Tabel diurutkan berdasarkan prediksi kasus 2026 dari yang terbanyak dan tingkat risiko berbahaya."
-    )
+    st.markdown("""
+    <div class="section-header"><div class="icon-badge">📊</div> Prediksi Kasus DBD Seluruh Provinsi Tahun 2026</div>
+    <p class="section-sub">Tabel hasil prediksi kasus DBD tahun 2026 untuk seluruh provinsi beserta tingkat risikonya, diurutkan dari prediksi kasus terbanyak.</p>
+    """, unsafe_allow_html=True)
 
     # ==================================================
     # TABEL PREDIKSI NASIONAL 2026
@@ -280,7 +250,9 @@ def show(df_merge):
     st.divider()
 
 # ── AI National Summary ──────────────────────────────────────────────────
-    st.subheader("🤖 AI Ringkasan Nasional")
+    st.markdown("""
+    <div class="section-header"><div class="icon-badge">🤖</div> AI Ringkasan Nasional</div>
+    """, unsafe_allow_html=True)
 
     # Hitung provinsi naik/turun
     prov_naik, prov_turun = [], []
@@ -352,7 +324,7 @@ PENTING: jangan gunakan markdown seperti ** atau ##, tulis teks biasa saja."""
             return None, str(e)
 
     # Panggil AI
-    with st.spinner("🤖 AI sedang menganalisis data..."):
+    with st.spinner("AI sedang menganalisis data..."):
         ai_text, ai_error = generate_ai_summary(
             tahun_max, kasus_max, pct,
             prov_naik_str, prov_turun_str,
@@ -361,11 +333,11 @@ PENTING: jangan gunakan markdown seperti ** atau ##, tulis teks biasa saja."""
 
     # Tentukan warna border berdasarkan tren
     if pct > 10:
-        trend_color = "#c8502a"
+        trend_color = "#f87171"
     elif pct < -10:
-        trend_color = "#2a8c5a"
+        trend_color = "#34d399"
     else:
-        trend_color = "#c8960a"
+        trend_color = "#fbbf24"
 
     if ai_error:
         # Fallback ke teks otomatis kalau AI gagal

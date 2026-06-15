@@ -18,30 +18,277 @@ st.set_page_config(
 # ── Global CSS ────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap');
-html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
-h1, h2, h3 { font-family: 'Syne', sans-serif; }
-.metric-card {
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-    border: 1px solid #0f3460; border-radius: 12px;
-    padding: 20px; text-align: center; color: white;
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --bg-app: #0a0f1e;
+    --bg-app-2: #0d1424;
+    --bg-surface: #121a2e;
+    --bg-surface-2: #1a2438;
+    --border-c: rgba(148,163,184,0.10);
+    --border-c-strong: rgba(148,163,184,0.20);
+    --text-primary: #e8edf5;
+    --text-secondary: #9aa8c2;
+    --text-muted: #5f6f8e;
+    --accent: #22d3ee;
+    --accent-2: #818cf8;
+    --accent-soft: rgba(34,211,238,0.12);
+    --success: #34d399;
+    --success-soft: rgba(52,211,153,0.12);
+    --warning: #fbbf24;
+    --warning-soft: rgba(251,191,36,0.12);
+    --orange: #fb923c;
+    --orange-soft: rgba(251,146,60,0.12);
+    --danger: #f87171;
+    --danger-soft: rgba(248,113,113,0.12);
+    --radius-lg: 16px;
+    --radius-md: 12px;
+    --radius-sm: 8px;
 }
+
+html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
+h1, h2, h3, h4, h5 { font-family: 'Sora', sans-serif; letter-spacing: -0.01em; color: var(--text-primary) !important; }
+h1 { font-weight: 800; font-size: 2.05rem; }
+
+/* ── App background ─────────────────────────────────────────────── */
+[data-testid="stAppViewContainer"] {
+    background: radial-gradient(circle at 15% -10%, #14213d 0%, var(--bg-app) 55%);
+}
+[data-testid="stHeader"] { background: transparent; }
+.block-container { padding-top: 2.2rem; padding-bottom: 3rem; max-width: 1300px; }
+
+[data-testid="stAppViewContainer"] p,
+[data-testid="stAppViewContainer"] li,
+[data-testid="stAppViewContainer"] span,
+[data-testid="stAppViewContainer"] label,
+[data-testid="stMarkdownContainer"] { color: var(--text-secondary); }
+
+hr { border-color: var(--border-c) !important; margin: 1.5rem 0 !important; }
+
+/* ── Metric cards ───────────────────────────────────────────────── */
+.metric-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-c);
+    border-radius: var(--radius-lg);
+    padding: 22px 20px;
+    position: relative;
+    overflow: hidden;
+    transition: transform .2s ease, border-color .2s ease;
+}
+.metric-card::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+}
+.metric-card:hover { transform: translateY(-3px); border-color: var(--border-c-strong); }
 .metric-card .label {
-    font-size: 12px; color: #8892b0;
-    text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;
+    font-size: 11px; color: var(--text-muted); text-transform: uppercase;
+    letter-spacing: 1.5px; font-weight: 600; margin-bottom: 8px;
 }
 .metric-card .value {
-    font-size: 28px; font-weight: 800;
-    font-family: 'Syne', sans-serif; color: #64ffda;
+    font-size: 28px; font-weight: 800; font-family: 'Sora', sans-serif;
+    color: var(--text-primary); line-height: 1.15;
 }
-.metric-card .sub { font-size: 11px; color: #8892b0; margin-top: 4px; }
+.metric-card .sub { font-size: 12px; color: var(--text-secondary); margin-top: 6px; }
+
+/* ── Insight box ────────────────────────────────────────────────── */
 .insight-box {
-    border-left: 4px solid #64ffda; background: #0a192f;
-    padding: 16px 20px; border-radius: 0 8px 8px 0;
-    margin: 12px 0; color: #ccd6f6;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-c);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius-md);
+    padding: 18px 22px; margin: 14px 0;
+    color: var(--text-secondary); line-height: 1.7; font-size: 14.5px;
 }
-section[data-testid="stSidebar"] { background: #0a192f; }
-section[data-testid="stSidebar"] * { color: #ccd6f6 !important; }
+
+/* ── Buttons ────────────────────────────────────────────────────── */
+.stButton button, .stDownloadButton button {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #0a0f1e !important; font-weight: 700; border: none;
+    border-radius: var(--radius-sm); padding: 0.55rem 1.2rem;
+    transition: opacity .15s ease, transform .15s ease;
+}
+.stButton button:hover, .stDownloadButton button:hover { opacity: .88; transform: translateY(-1px); }
+
+/* ── Selectbox / inputs ─────────────────────────────────────────── */
+div[data-baseweb="select"] > div, .stTextInput input, .stNumberInput input {
+    background: var(--bg-surface) !important;
+    border-color: var(--border-c) !important;
+    color: var(--text-primary) !important;
+    border-radius: var(--radius-sm) !important;
+}
+
+/* ── Alerts (st.success/info/warning/error) ────────────────────── */
+[data-testid="stAlert"] {
+    border-radius: var(--radius-md);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-c);
+}
+[data-testid="stAlert"] p { color: var(--text-secondary) !important; }
+
+/* ── Tabs ───────────────────────────────────────────────────────── */
+.stTabs [data-baseweb="tab-list"] { gap: 6px; border-bottom: 1px solid var(--border-c); }
+.stTabs [data-baseweb="tab"] {
+    background: transparent; border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    color: var(--text-secondary); padding: 10px 18px;
+}
+.stTabs [aria-selected="true"] {
+    color: var(--accent) !important; border-bottom: 2px solid var(--accent);
+}
+
+/* ── Sidebar ────────────────────────────────────────────────────── */
+section[data-testid="stSidebar"] {
+    background: var(--bg-app-2);
+    border-right: 1px solid var(--border-c);
+}
+section[data-testid="stSidebar"] * { color: var(--text-secondary) !important; }
+section[data-testid="stSidebar"] h1,
+section[data-testid="stSidebar"] h2,
+section[data-testid="stSidebar"] h3 { color: var(--text-primary) !important; }
+
+.brand-box {
+    display: flex; align-items: center; gap: 12px;
+    padding: 4px 0 18px 0; margin-bottom: 14px;
+    border-bottom: 1px solid var(--border-c);
+}
+.brand-icon {
+    font-size: 26px; width: 44px; height: 44px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--accent-soft); border-radius: var(--radius-md);
+}
+.brand-title { font-family: 'Sora', sans-serif; font-weight: 800; font-size: 17px; color: var(--text-primary) !important; }
+.brand-sub { font-size: 12px; color: var(--text-muted) !important; }
+
+.status-pill {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12.5px; font-weight: 500;
+    padding: 8px 12px; border-radius: var(--radius-sm);
+    margin-bottom: 6px; border: 1px solid var(--border-c);
+}
+.status-ok    { background: var(--success-soft); color: var(--success) !important; }
+.status-warn  { background: var(--warning-soft); color: var(--warning) !important; }
+.status-error { background: var(--danger-soft);  color: var(--danger) !important; }
+
+.sidebar-section-label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1.5px; color: var(--text-muted) !important;
+    margin: 18px 0 8px 2px;
+}
+
+section[data-testid="stSidebar"] [role="radiogroup"] {
+    gap: 2px !important;
+}
+section[data-testid="stSidebar"] [role="radiogroup"] label {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    margin: 0 !important;
+    border: 1px solid transparent;
+    transition: background .15s ease, border-color .15s ease;
+    cursor: pointer;
+}
+section[data-testid="stSidebar"] [role="radiogroup"] label > div:first-child {
+    margin: 0 !important;
+}
+section[data-testid="stSidebar"] [role="radiogroup"] label [data-testid="stMarkdownContainer"] p {
+    margin: 0 !important;
+    font-size: 14.5px;
+}
+section[data-testid="stSidebar"] [role="radiogroup"] label:hover {
+    background: var(--bg-surface-2);
+}
+section[data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked) {
+    background: var(--accent-soft); border-color: var(--accent);
+}
+section[data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked) p {
+    color: var(--accent) !important; font-weight: 700 !important;
+}
+
+.sidebar-footer {
+    font-size: 11.5px; color: var(--text-muted) !important;
+    line-height: 1.6; padding-top: 14px;
+}
+            
+/* ── Section header (reusable) ─────────────────────────────────── */
+.section-header {
+    font-family: 'Sora', sans-serif; font-weight: 700; font-size: 1.25rem;
+    color: var(--text-primary); margin: 28px 0 4px 0;
+    display: flex; align-items: center; gap: 10px;
+}
+.section-header .icon-badge {
+    display: flex; align-items: center; justify-content: center;
+    width: 34px; height: 34px; border-radius: var(--radius-sm);
+    background: var(--accent-soft); font-size: 16px; flex-shrink: 0;
+}
+.section-sub { color: var(--text-muted) !important; font-size: 13px; margin: 0 0 16px 0; }
+
+/* ── Bordered containers (st.container(border=True)) ─────────────── */
+[data-testid="stVerticalBlockBorderWrapper"] > div {
+    background: var(--bg-surface) !important;
+    border: 1px solid var(--border-c) !important;
+    border-radius: var(--radius-lg) !important;
+    padding: 18px !important;
+}
+
+/* ── Risk legend cards ─────────────────────────────────────────── */
+.risk-card {
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-c);
+    padding: 16px 18px;
+    height: 100%;
+}
+.risk-card .risk-title {
+    font-weight: 700; font-size: 14px; margin-bottom: 6px;
+    display: flex; align-items: center; gap: 8px;
+}
+.risk-card .risk-desc { font-size: 12.5px; color: var(--text-secondary) !important; line-height: 1.6; }
+.risk-card.risk-safe   { background: var(--success-soft); border-color: rgba(52,211,153,0.3); }
+.risk-card.risk-safe   .risk-title { color: var(--success) !important; }
+.risk-card.risk-watch  { background: var(--warning-soft); border-color: rgba(251,191,36,0.3); }
+.risk-card.risk-watch  .risk-title { color: var(--warning) !important; }
+.risk-card.risk-high   { background: var(--orange-soft); border-color: rgba(251,146,60,0.3); }
+.risk-card.risk-high   .risk-title { color: var(--orange) !important; }
+.risk-card.risk-danger { background: var(--danger-soft); border-color: rgba(248,113,113,0.3); }
+.risk-card.risk-danger .risk-title { color: var(--danger) !important; }
+
+/* ── Export panel ─────────────────────────────────────────────── */
+.export-panel {
+    padding: 24px; border-radius: var(--radius-lg);
+    background: linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-surface-2) 100%);
+    border: 1px solid var(--border-c);
+    margin: 8px 0 20px 0;
+}
+.export-panel h3 { margin: 0 0 6px 0 !important; font-size: 19px; }
+.export-panel p { margin: 0 !important; font-size: 13.5px; }
+
+.export-card {
+    border: 1px solid var(--border-c); border-radius: var(--radius-md);
+    padding: 12px 16px; margin-bottom: 10px; text-align: center;
+    font-weight: 700; font-size: 13.5px;
+}
+.export-card.export-csv   { background: var(--success-soft); color: var(--success) !important; }
+.export-card.export-excel { background: var(--accent-soft);  color: var(--accent) !important; }
+.export-card.export-pdf   { background: var(--warning-soft); color: var(--warning) !important; }
+.stButton button p,
+.stButton button div,
+.stDownloadButton button p,
+.stDownloadButton button div {
+    color: #0a0f1e !important;
+    font-weight: 700 !important;
+}
+            
+.province-header {
+    font-family: 'Sora', sans-serif; font-weight: 700; font-size: 1.05rem;
+    color: var(--text-primary) !important; margin: 4px 0 14px 0;
+    display: flex; align-items: center; gap: 8px;
+}
+.province-header .icon-badge-sm {
+    display: flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; border-radius: var(--radius-sm);
+    background: var(--accent-soft); font-size: 13px; flex-shrink: 0;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -76,20 +323,18 @@ has_model = model_bundle is not None
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown("## DBD Forecasting")
-    st.markdown("**Indonesia · 2020–2025**")
+    st.markdown("""
+    <div class="brand-box">
+        <div class="brand-icon">🦟</div>
+        <div>
+            <div class="brand-title">DBD Forecasting</div>
+            <div class="brand-sub">Indonesia · 2020–2025</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    if has_data:
-        st.success("✅ Dataset terhubung")
-    else:
-        st.error("❌ Dataset tidak tersedia")
+    st.markdown('<div class="sidebar-section-label">Navigasi</div>', unsafe_allow_html=True)
 
-    if has_model:
-        st.success("✅ Model dimuat")
-    else:
-        st.warning("⚠️ Model belum dimuat")
-
-    st.divider()
     pages = [
         "Beranda",
         "Tren DBD",
@@ -112,15 +357,14 @@ with st.sidebar:
 
     st.session_state.page = page
 
-    st.divider()
+    st.markdown('<div class="sidebar-section-label">Data</div>', unsafe_allow_html=True)
 
-    if has_data and st.button("Refresh Data"):
+    if has_data and st.button("🔄 Refresh Data", use_container_width=True):
         st.cache_data.clear()
         st.rerun()
 
     st.markdown(
-        "<small style='color:#8892b0'>Kelompok 4 · DSGA<br>"
-        "Dengue Disease Forecasting</small>",
+        '<div class="sidebar-footer">Kelompok 4 · DSGA<br>Dengue Disease Forecasting</div>',
         unsafe_allow_html=True,
     )
 

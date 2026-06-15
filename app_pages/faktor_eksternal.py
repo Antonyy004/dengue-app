@@ -44,25 +44,31 @@ REKOMENDASI_MAP = {
 
 def show(df_merge):
     st.title("🔬 Faktor yang Mempengaruhi Kasus DBD")
+    st.caption("Analisis feature importance untuk memahami faktor-faktor utama yang mempengaruhi prediksi kasus DBD per provinsi.")
 
-    prov_opts = get_provinsi_list(df_merge)
-    col1, col2 = st.columns([2, 1])
-    with col1:
-        prov_fi = st.selectbox("Provinsi", prov_opts)
-        prov_fi_model = normalize_province_name(prov_fi)
-        if st.session_state.get("last_faktor_prov") != prov_fi:
-            st.session_state["last_faktor_prov"] = prov_fi
-            st.session_state["show_faktor"] = False
-    with col2:
-        top_n = st.slider(
-            "Jumlah faktor yang ditampilkan",
-            3,
-            15,
-            10
-        )
+    st.markdown("""
+    <div class="section-header"><div class="icon-badge">🔬</div> Pilih Provinsi & Parameter</div>
+    """, unsafe_allow_html=True)
 
-    if st.button("📊 Lihat Hasil Analisis", type="primary"):
-        st.session_state["show_faktor"] = True
+    with st.container(border=True):
+        prov_opts = get_provinsi_list(df_merge)
+        col1, col2 = st.columns([2, 1])
+        with col1:
+            prov_fi = st.selectbox("Provinsi", prov_opts)
+            prov_fi_model = normalize_province_name(prov_fi)
+            if st.session_state.get("last_faktor_prov") != prov_fi:
+                st.session_state["last_faktor_prov"] = prov_fi
+                st.session_state["show_faktor"] = False
+        with col2:
+            top_n = st.slider(
+                "Jumlah faktor yang ditampilkan",
+                3,
+                15,
+                10
+            )
+
+        if st.button("📊 Lihat Hasil Analisis", type="primary", use_container_width=True):
+            st.session_state["show_faktor"] = True
 
     if not st.session_state.get("show_faktor", False):
         return

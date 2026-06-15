@@ -16,20 +16,27 @@ from utils.export_utils import (
 
 def show(df_merge):
     st.title("🔮 Prediksi Kasus DBD")
+    st.caption("Jalankan prediksi kasus DBD per provinsi untuk tahun-tahun mendatang berdasarkan model machine learning.")
 
     prov_opts = get_provinsi_list(df_merge)
     thn_opts  = get_tahun_list(df_merge)
     max_thn   = int(max(thn_opts))
 
-    col1, col2 = st.columns(2)
-    with col1:
-        prov_pred = st.selectbox("Provinsi", prov_opts)
-    with col2:
-        thn_pred = st.selectbox("Tahun Prediksi",
-                                list(range(max_thn + 1, max_thn + 6)))
+    st.markdown("""
+    <div class="section-header"><div class="icon-badge">🔮</div> Input Prediksi</div>
+    """, unsafe_allow_html=True)
 
+    with st.container(border=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            prov_pred = st.selectbox("Provinsi", prov_opts)
+        with col2:
+            thn_pred = st.selectbox("Tahun Prediksi",
+                                    list(range(max_thn + 1, max_thn + 6)))
 
-    if st.button("🔮 Jalankan Prediksi", type="primary"):
+        run_pred = st.button("Jalankan Prediksi", type="primary", use_container_width=True)
+
+    if run_pred:
 
         with st.spinner("Menghitung..."):
 

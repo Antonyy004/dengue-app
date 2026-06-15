@@ -52,14 +52,20 @@ POLICY_MAP = {
 
 def show(df_merge):
     st.title("⚙️ Simulasi Variabel")
-    st.markdown("Ubah nilai faktor eksternal dan lihat dampaknya terhadap prediksi kasus.")
+    st.caption("Ubah nilai faktor eksternal dan lihat dampaknya terhadap prediksi kasus DBD.")
 
     prov_opts    = get_provinsi_list(df_merge)
     fitur_cols   = list(get_bundle("fitur_cols", []))
     prov_to_kode = get_bundle("prov_to_kode", {})
     df_modeling  = get_bundle("df_modeling", pd.DataFrame())
 
-    prov_sim = st.selectbox("Provinsi", prov_opts)
+    st.markdown("""
+    <div class="section-header"><div class="icon-badge">📍</div> Pilih Provinsi</div>
+    """, unsafe_allow_html=True)
+
+    with st.container(border=True):
+        prov_sim = st.selectbox("Provinsi", prov_opts)
+
     prov_sim_model = normalize_province_name(prov_sim)
 
     # Ambil nilai baseline
