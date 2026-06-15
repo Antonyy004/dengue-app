@@ -14,3 +14,4 @@ streamlit-folium
 supabase
 pmdarima
 python-dotenv
+openpyxl
