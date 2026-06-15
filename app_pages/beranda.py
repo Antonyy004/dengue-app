@@ -24,7 +24,7 @@ def show(df_merge):
 
     map_obj, risk_df = show_risk_map(
         df_merge,
-        "assets\indonesia_provinces.geojson.json"
+        "assets/indonesia_provinces.geojson.json"
     )
 
     st_folium(
