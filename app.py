@@ -292,6 +292,15 @@ section[data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked) p 
 </style>
 """, unsafe_allow_html=True)
 
+# ── Cek Login ─────────────────────────────────────────────────────────────────
+if "user" not in st.session_state:
+    from app_pages.login import show as show_login
+    show_login()
+    st.stop()
+
+user = st.session_state["user"]
+role = user.get("role", "viewer")
+
 # ── Load data & model (cached — load sekali, pakai di semua page) ─────────────
 from utils.db import load_data
 from utils.model import load_model_bundle
@@ -323,50 +332,44 @@ has_model = model_bundle is not None
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown("""
-    <div class="brand-box">
-        <div class="brand-icon">🦟</div>
-        <div>
-            <div class="brand-title">DBD Forecasting</div>
-            <div class="brand-sub">Indonesia · 2020–2025</div>
-        </div>
+    role_badge = {"admin": ("🔴","Admin"), "researcher": ("🟡","Researcher"), "viewer": ("🔵","Viewer")}.get(role, ("⚪", role))
+    st.markdown(f"""
+    <div class="status-pill status-ok" style="margin-bottom:14px;">
+        <span>{role_badge[0]} {user['nama']} · <b>{role_badge[1]}</b></span>
     </div>
     """, unsafe_allow_html=True)
 
     st.markdown('<div class="sidebar-section-label">Navigasi</div>', unsafe_allow_html=True)
 
-    pages = [
-        "Beranda",
-        "Tren DBD",
-        "Prediksi",
-        "Faktor Eksternal",
-        "Simulasi",
-        "Analisis Provinsi",
-        "Tentang Aplikasi"
-    ]
+    all_pages = {
+        "Beranda":           ["admin", "researcher", "viewer"],
+        "Tren DBD":          ["admin", "researcher", "viewer"],
+        "Prediksi":          ["admin", "researcher"],
+        "Faktor Eksternal":  ["admin", "researcher"],
+        "Simulasi":          ["admin", "researcher"],
+        "Analisis Provinsi": ["admin", "researcher", "viewer"],
+        "Tentang Aplikasi":  ["admin", "researcher", "viewer"],
+        "Kelola User":       ["admin"],
+    }
+    pages = [p for p, roles in all_pages.items() if role in roles]
 
-    if "page" not in st.session_state:
+    if "page" not in st.session_state or st.session_state.page not in pages:
         st.session_state.page = "Beranda"
 
-    page = st.radio(
-        "Navigasi",
-        pages,
-        index=pages.index(st.session_state.page),
-        label_visibility="collapsed",
-    )
-
+    page = st.radio("Navigasi", pages,
+                    index=pages.index(st.session_state.page),
+                    label_visibility="collapsed")
     st.session_state.page = page
 
     st.markdown('<div class="sidebar-section-label">Data</div>', unsafe_allow_html=True)
-
     if has_data and st.button("🔄 Refresh Data", use_container_width=True):
         st.cache_data.clear()
         st.rerun()
 
-    st.markdown(
-        '<div class="sidebar-footer">Kelompok 4 · DSGA<br>Dengue Disease Forecasting</div>',
-        unsafe_allow_html=True,
-    )
+    st.markdown('<div class="sidebar-section-label">Akun</div>', unsafe_allow_html=True)
+    if st.button("🚪 Logout", use_container_width=True):
+        st.session_state.clear()
+        st.rerun()
 
 # ── Error banners ─────────────────────────────────────────────────────────────
 if data_error:
@@ -419,4 +422,8 @@ elif page == "Analisis Provinsi":
 
 elif page == "Tentang Aplikasi":
     from app_pages.about import show
+    show()
+
+elif page == "Kelola User":
+    from app_pages.admin_users import show
     show()
