@@ -16,3 +16,4 @@ pmdarima
 python-dotenv
 openpyxl
 plotly
+bcrypt
